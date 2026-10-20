@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo – DevOps Final Project</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; color: #222; }
+    form.add { display: flex; gap: 8px; margin-bottom: 16px; }
+    input[type=text] { flex: 1; padding: 8px; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #ddd; }
+    li form { margin: 0; }
+    button { padding: 6px 12px; cursor: pointer; }
+    footer { margin-top: 24px; font-size: 12px; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>Việc cần làm</h1>
+
+  <form class="add" method="post" action="/add">
+    <input type="text" name="title" placeholder="Thêm việc mới..." required maxlength="200">
+    <button type="submit">Thêm</button>
+  </form>
+
+  <ul>
+    {% for todo in todos %}
+      <li>
+        <span>{{ todo[1] }}</span>
+        <form method="post" action="/delete/{{ todo[0] }}">
+          <button type="submit">Xoá</button>
+        </form>
+      </li>
+    {% else %}
+      <li>Chưa có việc nào.</li>
+    {% endfor %}
+  </ul>
+
+  <footer>Phiên bản: {{ version }}</footer>
+</body>
+</html>
