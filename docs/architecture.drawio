@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Week 1 architecture" id="week1">
+    <mxGraphModel dx="1100" dy="750" grid="1" gridSize="10" page="1" pageWidth="1100" pageHeight="750">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user" value="User / Browser" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="60" y="70" width="200" height="70" />
+        </mxCell>
+        <mxCell id="dev" value="Development team" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="350" y="70" width="200" height="70" />
+        </mxCell>
+        <mxCell id="git" value="GitHub repository" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="70" width="230" height="70" />
+        </mxCell>
+        <mxCell id="ec2" value="EC2 todo-server | t3.small | Ubuntu 24.04 | Elastic IP" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#64748b;verticalAlign=top;spacingTop=12;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="30" y="200" width="940" height="430" />
+        </mxCell>
+        <mxCell id="net" value="Docker Compose network | services can reach each other" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#64748b;verticalAlign=top;spacingTop=12;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="55" y="270" width="890" height="260" />
+        </mxCell>
+        <mxCell id="nginx" value="Nginx :80&#10;Public HTTP entry&#10;/metrics -&gt; 403" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="85" y="340" width="230" height="100" />
+        </mxCell>
+        <mxCell id="app" value="Flask / Gunicorn :8000&#10;/health, /metrics&#10;No published port" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="355" y="340" width="230" height="100" />
+        </mxCell>
+        <mxCell id="db" value="PostgreSQL 17 :5432&#10;todos table&#10;No published port" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="340" width="230" height="100" />
+        </mxCell>
+        <mxCell id="vol" value="Volume db-data&#10;Persistent database storage" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="550" width="260" height="55" />
+        </mxCell>
+        <mxCell id="e0" value="HTTP :80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="user" target="nginx">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e1" value="git push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="dev" target="git">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e2" value="SSH :22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="dev" target="ec2">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e3" value="git clone" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="git" target="ec2">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e4" value="HTTP :8000" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="nginx" target="app">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e5" value="SQL :5432" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="app" target="db">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e6" value="Data mount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;fontSize=13;" edge="1" parent="1" source="db" target="vol">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
