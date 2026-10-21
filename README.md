@@ -43,29 +43,46 @@ devops-final/
 │   └── init.sql
 ├── nginx/
 │   └── default.conf
+├── scripts/
+│   └── setup-server.sh
 └── docs/
     ├── architecture.drawio
     └── architecture.png
 ```
 
 ## Triển khai
-1. Tạo EC2 Ubuntu 24.04, t3.small, gắn Elastic IP.
-2. Cấu hình Security Group cho HTTP cổng 80 và SSH cổng 22.
-3. Cài Docker Engine và Docker Compose plugin.
-4. Clone repo:
+Lab dùng AWS Academy Sandbox: **mỗi lần End Lab, toàn bộ tài nguyên bị xoá**
+(EC2, Elastic IP, dữ liệu DB). Vì vậy server được dựng lại bằng script
+`scripts/setup-server.sh`, và Elastic IP sẽ khác sau mỗi lần dựng lại.
+
+### Cách 1: tự động bằng User data (dùng mỗi phiên lab)
+1. Launch EC2: Ubuntu 24.04, t3.small, key pair vockey, ổ gp2 20 GB,
+   Security Group mở cổng 22 (SSH) và 80 (HTTP).
+2. Ở **Advanced details → User data**, dán toàn bộ nội dung `scripts/setup-server.sh`.
+3. Cấp Elastic IP mới và gắn vào instance.
+4. Chờ khoảng 5 phút rồi mở `http://<ELASTIC_IP>`.
+
+Script tự cài Docker, clone repo vào `~/devops-todo`, tạo `.env` với mật khẩu
+ngẫu nhiên và chạy `docker compose up -d --build`.
+
+Trên server:
+
+```bash
+sudo tail -f /var/log/setup-server.log   # xem tiến độ, thấy "SETUP XONG" là xong
+cat ~/devops-todo/.env                   # xem mật khẩu đã tạo
+```
+
+### Cách 2: làm tay
+1. Tạo EC2 và Security Group như trên, gắn Elastic IP.
+2. Cài Docker Engine và Docker Compose plugin.
+3. Clone repo:
 
    ```bash
-   git clone https://github.com/ericphan2545/devops-final.git
-   cd devops-final
+   git clone https://github.com/ericphan2545/devops-final.git devops-todo
+   cd devops-todo
    ```
 
-   Nếu cấu hình vẫn nằm trên nhánh docker-setup, chuyển sang nhánh đó:
-
-   ```bash
-   git switch docker-setup
-   ```
-
-5. Tạo file biến môi trường:
+4. Tạo file biến môi trường:
 
    ```bash
    cp .env.example .env
@@ -75,7 +92,7 @@ devops-final/
    Đổi POSTGRES_PASSWORD trước lần chạy đầu.
    Không commit file .env chứa mật khẩu thật.
 
-6. Kiểm tra cấu hình và chạy:
+5. Kiểm tra cấu hình và chạy:
 
    ```bash
    docker compose config --quiet
@@ -83,7 +100,7 @@ devops-final/
    docker compose ps
    ```
 
-7. Mở `http://<ELASTIC_IP>` bằng trình duyệt, thay placeholder bằng IP thật.
+6. Mở `http://<ELASTIC_IP>` bằng trình duyệt, thay placeholder bằng IP thật.
 
 ## Kiểm tra
 Thêm và xoá thử một công việc trên giao diện.
@@ -121,9 +138,10 @@ docker compose logs db --tail 20
 ```
 
 ## Thành viên và phân công
-| Thành viên | MSSV | Phần việc |
+| Thành viên | MSSV | Phần việc tuần 1 |
 | --- | --- | --- |
-| Điền tên | Điền MSSV | Điền phần việc |
+| Phan Tiến Thịnh | 23090023 | Tạo repo và đưa app mẫu lên GitHub; tạo EC2, Security Group, Elastic IP; cài Docker; triển khai và kiểm tra trên server; viết script setup-server.sh |
+| Ngô Tấn Đức | 23090008 | Viết Dockerfile; docker-compose.yml, .env.example, .gitignore; cấu hình Nginx; sơ đồ kiến trúc; README |
 
 ## Minh chứng tuần 1
 Đánh dấu sau khi kiểm tra và thu thập minh chứng thực tế:
@@ -138,6 +156,9 @@ docker compose logs db --tail 20
 - [ ] Dữ liệu còn sau khi down rồi up.
 - [ ] Mỗi thành viên có commit cho phần việc thực tế.
 - [ ] Video demo ngắn.
+
+Lưu ý: ảnh minh chứng được chụp ở nhiều phiên lab khác nhau,
+nên Elastic IP trong các ảnh có thể khác nhau (xem mục Triển khai).
 
 ## Phạm vi tuần 1
 Đóng gói app, cấu hình Docker Compose, Nginx và tài liệu triển khai.
