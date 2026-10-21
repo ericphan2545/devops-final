@@ -142,20 +142,22 @@ docker compose logs db --tail 20
 | --- | --- | --- |
 | Phan Tiến Thịnh | 23090023 | Tạo repo và đưa app mẫu lên GitHub; tạo EC2, Security Group, Elastic IP; cài Docker; triển khai và kiểm tra trên server; viết script setup-server.sh |
 | Ngô Tấn Đức | 23090008 | Viết Dockerfile; docker-compose.yml, .env.example, .gitignore; cấu hình Nginx; sơ đồ kiến trúc; README |
+| Đặng Vĩnh Quang | 23090005 | Hiện tại chưa có |
+| Huỳnh Hữu Như Mẫn | 23090020 | Hiện tại chưa có |
 
 ## Minh chứng tuần 1
 Đánh dấu sau khi kiểm tra và thu thập minh chứng thực tế:
 
-- [ ] Sơ đồ kiến trúc .drawio và PNG.
-- [ ] EC2 Running: Ubuntu 24.04, t3.small, Elastic IP.
-- [ ] Security Group có cổng 22 và 80.
-- [ ] Kết quả docker --version và docker compose version.
-- [ ] Ba service đang chạy, db healthy.
-- [ ] App thêm và xoá được công việc.
-- [ ] /health trả ok, /metrics trả 403.
-- [ ] Dữ liệu còn sau khi down rồi up.
+- [x] Sơ đồ kiến trúc .drawio và PNG ([drawio](docs/architecture.drawio), [png](docs/architecture.png)).
+- [x] EC2 Running: Ubuntu 24.04, t3.small, Elastic IP ([ảnh](docs/evidence/ec2-running.png)).
+- [x] Security Group có cổng 22 và 80 ([ảnh](docs/evidence/security-group.png)).
+- [x] Kết quả docker --version và docker compose version ([ảnh](docs/evidence/docker-version.png)).
+- [x] Ba service đang chạy, db healthy ([ảnh](docs/evidence/compose-up-ps.png)).
+- [x] App thêm và xoá được công việc ([ảnh](docs/evidence/app-web.png), [video](docs/evidence/demo.mp4)).
+- [x] /health trả ok, /metrics trả 403 ([ảnh](docs/evidence/health-metrics.png), [qua IP public](docs/evidence/health-public-ip.png)).
+- [ ] Dữ liệu còn sau khi down rồi up ([ảnh down/up](docs/evidence/compose-down-up.png)).
 - [ ] Mỗi thành viên có commit cho phần việc thực tế.
-- [ ] Video demo ngắn.
+- [x] Video demo ngắn ([video](docs/evidence/demo.mp4)).
 
 Lưu ý: ảnh minh chứng được chụp ở nhiều phiên lab khác nhau,
 nên Elastic IP trong các ảnh có thể khác nhau (xem mục Triển khai).
