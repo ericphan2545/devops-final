@@ -23,6 +23,7 @@ services:
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_VERSION: ${APP_VERSION:-dev}
     depends_on:
       db:
         condition: service_healthy
