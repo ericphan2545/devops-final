@@ -145,13 +145,17 @@ Nên sao lưu DB trước khi nâng cấp. Sau khi lấy đầy đủ các file 
 Bản Flask dùng API và PostgreSQL thật. Link Sites xem thử trước đây là môi trường mô phỏng riêng; không tự kết nối vào EC2. Xem [hướng dẫn bật đồng bộ thật](docs/production-sync.md) để chạy đúng bản ứng dụng.
 
 
-Cấu hình mục tiêu: Ubuntu 24.04, t3.small, ổ 20 GiB, HTTP 80 và SSH 22 cho nguồn quản trị/deploy phù hợp.
+Server chạy 24/7 trên tài khoản AWS riêng của nhóm (gói Free, vùng Sydney ap-southeast-2):
+Ubuntu 24.04, t3.small, ổ 20 GiB, mở HTTP 80 và SSH 22.
+Địa chỉ: http://todo-devops.duckdns.org
 
-Có thể dán `scripts/setup-server.sh` vào EC2 User data để cài Docker, clone repo vào `~/devops-todo`, tạo `.env` và chạy Compose. Xem log bằng `sudo tail -f /var/log/setup-server.log`.
+Dựng server mới: dán `scripts/setup-server.sh` vào EC2 User data, điền `DUCKDNS_TOKEN` ở đầu
+(token xem ở duckdns.org, không commit). Script cài Docker, clone repo vào `~/devops-todo`, tạo `.env`,
+chạy Compose và tự báo IP cho DuckDNS (lúc khởi động và mỗi 5 phút),
+nên secret `EC2_HOST` (= `todo-devops.duckdns.org`) không phải sửa khi IP đổi.
+Xem log bằng `sudo tail -f /var/log/setup-server.log` (chỉ root đọc được vì có mật khẩu và token).
 
-Script setup hiện dùng `set -x`, có thể đưa mật khẩu sinh ra vào log. Không công khai log đó; cần tắt tracing quanh đoạn tạo mật khẩu khi hoàn thiện script.
-
-Sau khi code đã merge vào main, trên server:
+Mỗi lần push/merge vào main, GitHub Actions tự test, build và deploy. Muốn deploy tay, trên server:
 
 ```bash
 cd ~/devops-todo
@@ -235,7 +239,7 @@ Test tạo schema PostgreSQL ngẫu nhiên riêng và dọn schema đó khi xong
 
 Volume `db-data` giữ dữ liệu khi tạo lại container trên cùng host, không bảo vệ khi host/ổ đĩa bị xoá. `docker compose down -v` xoá dữ liệu DB. Đổi `.env` không tự đổi mật khẩu trong DB đã được tạo.
 
-Lab của nhóm trước đây được ghi nhận có thể xoá tài nguyên khi End Lab. Cần xác nhận hành vi thực tế, đồng bộ hết hàng đợi và có backup trước khi xoá tài nguyên. Nếu tạo server hoặc key mới, cập nhật cấu hình triển khai và GitHub Secrets tương ứng.
+Server không còn dùng lab AWS Academy (lab xoá sạch tài nguyên sau mỗi phiên). Nếu phải tạo server hoặc key mới, chỉ cần cập nhật secret `EC2_SSH_KEY`; `EC2_HOST` giữ nguyên nhờ DuckDNS. Backup DB trước khi xoá server.
 
 ## CI/CD và phạm vi tuần 2
 
