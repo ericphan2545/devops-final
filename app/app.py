@@ -213,7 +213,7 @@ def health():
     try:
         with get_db() as conn:
             conn.execute("SELECT 1")
-        return {"status": "ok"}
+        return {"status": "okk"}
     except psycopg.Error:
         return {"status": "error", "detail": "cannot connect to database"}, 500
 
