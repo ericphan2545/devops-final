@@ -58,9 +58,12 @@ Lab dùng AWS Academy Sandbox: **mỗi lần End Lab, toàn bộ tài nguyên b�
 ### Cách 1: tự động bằng User data (dùng mỗi phiên lab)
 1. Launch EC2: Ubuntu 24.04, t3.small, key pair vockey, ổ gp2 20 GB,
    Security Group mở cổng 22 (SSH) và 80 (HTTP).
-2. Ở **Advanced details → User data**, dán toàn bộ nội dung `scripts/setup-server.sh`.
+2. Ở **Advanced details → User data**, dán toàn bộ nội dung `scripts/setup-server.sh`,
+   rồi điền `DUCKDNS_TOKEN` ở đầu (token xem ở duckdns.org, không commit).
 3. Cấp Elastic IP mới và gắn vào instance.
-4. Chờ khoảng 5 phút rồi mở `http://<ELASTIC_IP>`.
+4. Chờ khoảng 5 phút rồi mở `http://todo-devops.duckdns.org`.
+   Server tự báo IP mới cho DuckDNS (lúc khởi động và mỗi 5 phút), nên secret
+   `EC2_HOST` (= `todo-devops.duckdns.org`) không phải sửa sau mỗi lần dựng lại.
 
 Script tự cài Docker, clone repo vào `~/devops-todo`, tạo `.env` với mật khẩu
 ngẫu nhiên và chạy `docker compose up -d --build`.
