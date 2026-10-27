@@ -267,3 +267,5 @@ Các ảnh này thuộc bản trước, không chứng minh tính năng ngoại 
 Nguồn app ban đầu được hỗ trợ bởi AI (Claude); phần giao diện, đồng bộ và tài liệu được hỗ trợ bởi AI (Codex). Nhóm kiểm tra và chịu trách nhiệm với bản nộp.
 
 Nguồn kỹ thuật: [Service Worker và điều kiện HTTPS/localhost](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [IndexedDB và giao dịch dữ liệu](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
+
+Demo CI/CD: cập nhật tài liệu lần 2.
