@@ -18,7 +18,7 @@
     <span class="ow-task-title" data-task-title>{{ todo.title if todo else '' }}</span>
     <div class="ow-task-meta"><span class="ow-id" data-task-id>{% if todo %}#{{ todo.id }}{% endif %}</span><div class="ow-badges" data-badges>
       {% if todo and todo.due_date %}<span class="ow-pill">{{ todo.due_date }}{% if todo.due_time %} · {{ todo.due_time }}{% endif %}</span>{% endif %}
-      {% if todo %}{% for tag in todo.tags %}<span class="ow-tag tag-{{ tag }}">{{ tag_names[tag] }}</span>{% endfor %}{% if todo.priority %}<span class="ow-priority p{{ todo.priority }}">{{ {1:'Cao',2:'Trung bình',3:'Thấp'}[todo.priority] }}</span>{% endif %}{% endif %}
+      {% if todo %}{% for tag in todo.tags %}<span class="ow-tag" style="--category-color: {{ category_colors.get(tag, '#668dce') }}">{{ tag_names.get(tag, tag) }}</span>{% endfor %}{% if todo.priority %}<span class="ow-priority p{{ todo.priority }}">{{ {1:'Cao',2:'Trung bình',3:'Thấp'}[todo.priority] }}</span>{% endif %}{% endif %}
     </div></div>
   </div>
   <div class="ow-task-actions"><button type="button" class="ow-edit" data-edit aria-label="Sửa công việc" hidden>{{ icon('right') }}</button>
@@ -63,8 +63,19 @@
           <button class="ow-nav-item" type="button" data-view="calendar">{{ icon('calendar') }}<span>Lịch công việc</span></button>
         </nav>
         <section class="ow-category-section" aria-labelledby="ow-categories" data-categories hidden>
-          <h2 class="ow-section-label" id="ow-categories">PHÂN LOẠI</h2>
-          {% for key,label in [('ca-nhan','Cá nhân'),('devops','DevOps'),('hoc-tap','Học tập')] %}<button class="ow-nav-item" type="button" data-category="{{ key }}" aria-pressed="false"><span class="ow-category-dot tag-{{ key }}" aria-hidden="true"></span><span>{{ label }}</span><span class="ow-nav-count" data-category-count="{{ key }}">0</span></button>{% endfor %}
+          <div class="ow-category-heading"><h2 class="ow-section-label" id="ow-categories">PHÂN LOẠI</h2>
+            <details class="ow-category-create" data-category-create data-command><summary class="ow-category-toggle" aria-label="Thêm phân loại" data-category-toggle>{{ icon('plus') }}</summary>
+              <div class="ow-category-popover"><h3>Phân loại mới</h3><p>Đặt tên và chọn màu cho nhóm công việc.</p>
+                <form action="/categories/add" method="post" data-category-form>
+                  <label class="ow-field-label" for="ow-category-name">Tên phân loại</label><input id="ow-category-name" name="name" type="text" maxlength="40" required autocomplete="off" placeholder="Ví dụ: Công việc, Sức khỏe…" data-category-name aria-describedby="ow-category-error">
+                  <div class="ow-category-color-row"><label for="ow-category-color">Màu nhận diện</label><input id="ow-category-color" name="color" type="color" value="#668dce" data-category-color></div>
+                  <p class="ow-field-error" id="ow-category-error" role="alert" data-category-error hidden></p>
+                  <div class="ow-category-form-actions"><button class="ow-button ow-secondary" type="button" data-category-cancel>Huỷ</button><button class="ow-button ow-primary" type="submit" data-category-submit>Tạo phân loại</button></div>
+                </form>
+              </div>
+            </details>
+          </div>
+          <div data-category-list>{% for category in categories %}<button class="ow-nav-item" type="button" data-category="{{ category.id }}" aria-pressed="false"><span class="ow-category-dot" style="--category-color: {{ category.color }}" aria-hidden="true"></span><span class="ow-category-name">{{ category.name }}</span><span class="ow-nav-count" data-category-count="{{ category.id }}">0</span></button>{% endfor %}</div>
         </section>
         <div class="ow-sidebar-bottom"><button class="ow-nav-item ow-settings-link" type="button" data-open-settings hidden>{{ icon('settings') }}<span>Cài đặt</span></button><p class="ow-sidebar-note">Từng việc nhỏ. Một ngày gọn hơn.</p></div>
       </div>
@@ -82,7 +93,7 @@
           <div class="ow-command-tools">
             <details class="ow-command" data-command><summary>{{ icon('calendar') }}<span data-date-label>Lên lịch</span></summary><div class="ow-command-popover"><span class="ow-field-label">Ngày thực hiện</span><div class="ow-date-presets" data-date-presets hidden><button type="button" data-date-preset="today">Hôm nay</button><button type="button" data-date-preset="tomorrow">Ngày mai</button><button type="button" data-date-preset="weekend">Cuối tuần</button></div><label class="ow-field-label" for="ow-due-date">Chọn ngày</label><input id="ow-due-date" name="due_date" type="date" data-due-date><label class="ow-field-label" for="ow-due-time">Giờ (không bắt buộc)</label><input id="ow-due-time" name="due_time" type="time" data-due-time><button type="button" class="ow-text-button" data-clear-date hidden>Bỏ lịch</button></div></details>
             <details class="ow-command" data-command><summary>{{ icon('flag') }}<span data-priority-label>Ưu tiên</span></summary><div class="ow-command-popover"><label class="ow-field-label" for="ow-priority">Mức độ ưu tiên</label><select id="ow-priority" name="priority" data-priority><option value="0">Không đặt</option><option value="1">Cao</option><option value="2">Trung bình</option><option value="3">Thấp</option></select></div></details>
-            <details class="ow-command" data-command><summary>{{ icon('tag') }}<span data-tags-label>Gắn thẻ</span></summary><div class="ow-command-popover"><fieldset><legend class="ow-field-label">Phân loại công việc</legend>{% for key,name in [('hoc-tap','Học tập'),('devops','DevOps'),('ca-nhan','Cá nhân')] %}<label class="ow-tag-option"><input type="checkbox" name="tags" value="{{ key }}" data-tag> {{ name }}</label>{% endfor %}</fieldset></div></details>
+            <details class="ow-command" data-command><summary>{{ icon('tag') }}<span data-tags-label>Gắn thẻ</span></summary><div class="ow-command-popover"><fieldset><legend class="ow-field-label">Phân loại công việc</legend><div class="ow-tag-options" data-tag-options>{% for category in categories %}<label class="ow-tag-option"><input type="checkbox" name="tags" value="{{ category.id }}" data-tag><span class="ow-category-dot" style="--category-color: {{ category.color }}" aria-hidden="true"></span><span>{{ category.name }}</span></label>{% endfor %}</div></fieldset></div></details>
             <button class="ow-text-button" type="button" data-cancel-edit hidden>Huỷ chỉnh sửa</button>
           </div>
           <p id="ow-input-error" class="ow-field-error" role="alert" data-input-error hidden></p>

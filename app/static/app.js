@@ -1,7 +1,8 @@
 (function(global) {
 'use strict';
 const clone = value => JSON.parse(JSON.stringify(value));
-const TAG_NAMES = {'hoc-tap':'Học tập',devops:'DevOps','ca-nhan':'Cá nhân'};
+const DEFAULT_CATEGORIES=[{id:'ca-nhan',name:'Cá nhân',color:'#f36e77'},{id:'devops',name:'DevOps',color:'#67c5d3'},{id:'hoc-tap',name:'Học tập',color:'#ecc64c'}];
+const categoryNameKey=value=>normalize(value.trim().replace(/\s+/g,' '));
 const PRIORITIES = {1:'Cao',2:'Trung bình',3:'Thấp'};
 const dateKey = value => {const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const parseDay = value => new Date(`${value}T12:00:00`);
@@ -10,7 +11,7 @@ const todayKey = () => dateKey(new Date());
 const monday = value => {const d=parseDay(value);return plusDays(value,-((d.getDay()+6)%7));};
 const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').toLocaleLowerCase('vi');
 const uuid = () => {const b=new Uint8Array(16);global.crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const s=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');return `${s.slice(0,8)}-${s.slice(8,12)}-${s.slice(12,16)}-${s.slice(16,20)}-${s.slice(20)}`;};
-const emptyState = tasks => ({schema:1,serverTasks:clone(tasks),queue:[],lastSynced:null,lease:null});
+const emptyState = (tasks,categories=DEFAULT_CATEGORIES) => ({schema:1,serverTasks:clone(tasks),categories:clone(categories),queue:[],lastSynced:null,lease:null});
 function project(snapshot) {
   const map=new Map(snapshot.serverTasks.map(task=>[task.client_id,{...clone(task),pending:false}]));
   for(const op of snapshot.queue) {
@@ -20,6 +21,11 @@ function project(snapshot) {
     else if(op.type==='delete') map.delete(op.client_id);
   }
   return Array.from(map.values());
+}
+function projectCategories(snapshot){
+  const categories=new Map((snapshot.categories||DEFAULT_CATEGORIES).map(c=>[c.id,{...clone(c),pending:false}]));
+  for(const op of snapshot.queue)if(op.type==='category_create')categories.set(op.client_id,{id:op.client_id,...clone(op.payload),pending:true});
+  return Array.from(categories.values());
 }
 function visibleTasks(tasks,view,selectedDate,query,order,today=todayKey(),tag=null) {
   const needle=normalize(query.trim());
@@ -66,21 +72,31 @@ function connectionStatus(state,pending) {
 function acknowledge(snapshot,opId,result) {
   if(!snapshot.queue.some(op=>op.op_id===opId))return;
   snapshot.queue=snapshot.queue.filter(op=>op.op_id!==opId);
+  if(result.category){
+    const category=result.category,from=result.client_id,to=category.id;
+    snapshot.categories=(snapshot.categories||DEFAULT_CATEGORIES).filter(c=>c.id!==from&&c.id!==to);snapshot.categories.push(clone(category));
+    if(from!==to){
+      const remap=tags=>Array.from(new Set((tags||[]).map(tag=>tag===from?to:tag)));
+      snapshot.serverTasks.forEach(task=>{task.tags=remap(task.tags);});
+      snapshot.queue.forEach(op=>{if(op.payload.tags)op.payload.tags=remap(op.payload.tags);});
+    }
+    return;
+  }
   snapshot.serverTasks=snapshot.serverTasks.filter(task=>task.client_id!==result.client_id);
   if(result.deleted) snapshot.queue=snapshot.queue.filter(op=>op.client_id!==result.client_id);
   else if(result.task) snapshot.serverTasks.push(result.task);
 }
 class MemoryStore {
-  constructor(seed){this.value=emptyState(seed);}
+  constructor(seed,categories=DEFAULT_CATEGORIES){this.value=emptyState(seed,categories);}
   async read(){return clone(this.value);}
   async mutate(fn){const next=clone(this.value);fn(next);this.value=next;return clone(next);}
 }
 class LocalStore {
   constructor(db){this.db=db;this.channel=typeof BroadcastChannel==='function'?new BroadcastChannel('todo-workspace-v1'):null;}
-  static async open(seed){
+  static async open(seed,categories=DEFAULT_CATEGORIES){
     const db=await new Promise((resolve,reject)=>{const req=indexedDB.open('todo-workspace-v1',1);req.onupgradeneeded=()=>req.result.createObjectStore('workspace');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error('Bộ nhớ đang được sử dụng bởi một phiên cũ.'));});
     const store=new LocalStore(db);
-    await store.mutate(s=>{if(!s.schema)Object.assign(s,emptyState(seed));},false);
+    await store.mutate(s=>{if(!s.schema)Object.assign(s,emptyState(seed,categories));else if(!Array.isArray(s.categories))s.categories=clone(categories);},false);
     return store;
   }
   async read(){return new Promise((resolve,reject)=>{const tx=this.db.transaction('workspace','readonly');const req=tx.objectStore('workspace').get('state');req.onsuccess=()=>resolve(req.result||{});req.onerror=()=>reject(req.error);});}
@@ -109,16 +125,20 @@ function createGateway(){
   return {probe:async()=>{const data=await request('/health');if(data.status!=='ok')throw new Error('Cơ sở dữ liệu chưa sẵn sàng.');},read:()=>request('/api/tasks'),push:op=>request('/api/operations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op_id:op.op_id,type:op.type,client_id:op.client_id,payload:op.payload})})};
 }
 /* SERVER TRANSPORT END */
-function createDemoGateway(seed){
-  let tasks=clone(seed),online=true,counter=Math.max(0,...seed.map(t=>t.id))+1;
+function createDemoGateway(seed,initialCategories=DEFAULT_CATEGORIES){
+  let categories=clone(initialCategories),tasks=clone(seed),online=true,counter=Math.max(0,...seed.map(t=>t.id))+1;
   const journal=new Map(),deleted=new Set();
   const wait=()=>new Promise(resolve=>setTimeout(resolve,140));
   const check=()=>{if(!online)throw new Error('Kết nối mẫu đang tắt.');};
-  return {setOnline:value=>{online=value;},isOnline:()=>online,restore:seed=>{tasks=clone(seed);counter=Math.max(0,...tasks.map(t=>t.id))+1;journal.clear();deleted.clear();},
-    probe:async()=>{await wait();check();},read:async()=>{await wait();check();return{tasks:clone(tasks)};},
+  return {setOnline:value=>{online=value;},isOnline:()=>online,restore:(seed,cats=DEFAULT_CATEGORIES)=>{categories=clone(cats);tasks=clone(seed);counter=Math.max(0,...tasks.map(t=>t.id))+1;journal.clear();deleted.clear();},
+    probe:async()=>{await wait();check();},read:async()=>{await wait();check();return{tasks:clone(tasks),categories:clone(categories)};},
     push:async op=>{await wait();check();if(journal.has(op.op_id))return clone(journal.get(op.op_id));
       let task=tasks.find(t=>t.client_id===op.client_id);const result={op_id:op.op_id,client_id:op.client_id,deleted:false};
-      if(op.type==='delete'){tasks=tasks.filter(t=>t.client_id!==op.client_id);deleted.add(op.client_id);result.deleted=true;}
+      if(op.type==='category_create'){
+        let category=categories.find(c=>categoryNameKey(c.name)===categoryNameKey(op.payload.name));
+        if(!category){category={id:op.client_id,...clone(op.payload)};categories.push(category);}
+        result.category=clone(category);
+      }else if(op.type==='delete'){tasks=tasks.filter(t=>t.client_id!==op.client_id);deleted.add(op.client_id);result.deleted=true;}
       else if(deleted.has(op.client_id)){result.deleted=true;}
       else{
         if(op.type==='create'&&!task){task={...clone(op.payload),id:counter++,client_id:op.client_id,updated_at:new Date().toISOString()};tasks.push(task);}
@@ -128,7 +148,7 @@ function createDemoGateway(seed){
       journal.set(op.op_id,clone(result));return result;
     }};
 }
-const Logic={connectionStatus,project,visibleTasks,upcomingGroups,acknowledge,emptyState,dateKey,plusDays,monday,normalize,MemoryStore,createDemoGateway};
+const Logic={DEFAULT_CATEGORIES,projectCategories,categoryNameKey,connectionStatus,project,visibleTasks,upcomingGroups,acknowledge,emptyState,dateKey,plusDays,monday,normalize,MemoryStore,createDemoGateway};
 if(typeof module!=='undefined'&&module.exports)module.exports=Logic;
 if(typeof document==='undefined')return;
 const root=document.getElementById('todo-workspace');if(!root)return;
@@ -138,9 +158,10 @@ const preview=root.dataset.mode==='preview';
 const bootstrap=JSON.parse(q('#ow-bootstrap').textContent);
 if(preview&&bootstrap.demoBaseDate){const delta=Math.round((parseDay(todayKey())-parseDay(bootstrap.demoBaseDate))/86400000);bootstrap.tasks.forEach(task=>{if(task.due_date)task.due_date=plusDays(task.due_date,delta);});}
 const state={view:'upcoming',tag:null,editKey:null,date:null,week:monday(todayKey()),month:todayKey().slice(0,7),query:'',sort:'newest',health:'unknown',syncing:false,storageError:false,message:'',capability:''};
-let store,snapshot=emptyState(bootstrap.tasks),all=project(snapshot),pendingDelete=null,syncPromise=null,syncTimer=null;
+let store,snapshot=emptyState(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES),all=project(snapshot),categories=projectCategories(snapshot),categorySignature=null,pendingDelete=null,syncPromise=null,syncTimer=null;
 const owner=uuid();
-const gateway=preview?createDemoGateway(bootstrap.tasks):createGateway();
+const gateway=preview?createDemoGateway(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES):createGateway();
+const categoryName=id=>categories.find(c=>c.id===id)?.name||'Phân loại';
 const announce=text=>{q('[data-announcement]').textContent=text;};
 const publish=()=>root.dispatchEvent(new CustomEvent('workspace:change'));
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
@@ -171,7 +192,7 @@ function renderTask(task){
   const del=node.querySelector('[data-delete-form]');del.action=task.id?`/delete/${task.id}`:'#';node.querySelector('[data-delete]').setAttribute('aria-label',`Xoá công việc: ${task.title}`);
   const badges=node.querySelector('[data-badges]');badges.replaceChildren();
   if(task.due_date){const due=el('span','ow-pill'+(overdue(task)?' is-overdue':''),dueLabel(task));due.setAttribute('aria-label',(overdue(task)?'Quá hạn: ':'Lịch thực hiện: ')+dueLabel(task));badges.append(due);}
-  for(const tag of task.tags||[])if(TAG_NAMES[tag])badges.append(el('span',`ow-tag tag-${tag}`,TAG_NAMES[tag]));
+  for(const tag of task.tags||[]){const category=categories.find(c=>c.id===tag);if(category){const badge=el('span','ow-tag',category.name);badge.style.setProperty('--category-color',category.color);badges.append(badge);}}
   if(task.priority)badges.append(el('span',`ow-priority p${task.priority}`,PRIORITIES[task.priority]));
   if(task.pending)badges.append(el('span','ow-pending','⏳ Chờ đồng bộ'));
   badges.hidden=!badges.children.length;
@@ -222,10 +243,24 @@ function renderGroup(group){
   else list.append(el('li','ow-group-empty','Chưa có công việc.'));
   section.append(list);return section;
 }
+function renderCategories(){
+  const next=JSON.stringify(categories.map(c=>[c.id,c.name,c.color,c.pending]));if(next===categorySignature)return;
+  categorySignature=next;const selected=new Set(qa('[data-tag]').filter(input=>input.checked).map(input=>input.value));
+  const list=q('[data-category-list]'),options=q('[data-tag-options]');list.replaceChildren();options.replaceChildren();
+  for(const category of categories){
+    const button=el('button','ow-nav-item');button.type='button';button.dataset.category=category.id;button.setAttribute('aria-pressed',String(state.tag===category.id));
+    const dot=el('span','ow-category-dot');dot.style.setProperty('--category-color',category.color);dot.setAttribute('aria-hidden','true');
+    const label=el('span','ow-category-name',category.name);button.append(dot,label);
+    if(category.pending){const pending=el('span','ow-category-pending','↥');pending.setAttribute('aria-label','Chờ đồng bộ');button.append(pending);}
+    const count=el('span','ow-nav-count','0');count.dataset.categoryCount=category.id;button.append(count);list.append(button);
+    const option=el('label','ow-tag-option'),input=el('input');input.type='checkbox';input.name='tags';input.value=category.id;input.dataset.tag='';input.checked=selected.has(category.id);
+    const optionDot=dot.cloneNode(true);option.append(input,optionDot,el('span','',category.name));options.append(option);
+  }
+}
 function render(){
-  all=project(snapshot);root.dataset.view=state.view;
+  all=project(snapshot);categories=projectCategories(snapshot);renderCategories();root.dataset.view=state.view;
   const visible=visibleTasks(all,state.view,state.date,state.query,state.sort,todayKey(),state.tag);
-  const title=state.query?'Tìm kiếm':state.tag?TAG_NAMES[state.tag]:{all:'Tất cả',today:'Hôm nay',upcoming:'Sắp tới',calendar:'Lịch công việc'}[state.view];
+  const title=state.query?'Tìm kiếm':state.tag?categoryName(state.tag):{all:'Tất cả',today:'Hôm nay',upcoming:'Sắp tới',calendar:'Lịch công việc'}[state.view];
   q('[data-page-title]').textContent=title;q('[data-total]').textContent=String(visible.length);
   q('[data-view-description]').textContent=state.query?`Kết quả cho “${state.query}”`:state.tag?'Những công việc trong cùng một nhóm.':{all:'Mọi công việc, ở cùng một nơi.',today:'Tập trung vào những việc của hôm nay.',upcoming:'Hôm nay, ngày mai và những ngày tiếp theo.',calendar:'Chọn một ngày để xem và sắp xếp công việc.'}[state.view];
   const list=q('[data-list]');list.replaceChildren();list.classList.toggle('is-upcoming',state.view==='upcoming');
@@ -233,7 +268,7 @@ function render(){
     const empty=el('div','ow-empty');empty.append(el('h3','','Không tìm thấy công việc'),el('p','','Thử từ khoá khác hoặc bỏ bộ lọc.'));
     const button=el('button','ow-text-button','Xem tất cả công việc');button.type='button';button.dataset.resetFilters='';empty.append(button);list.append(empty);
   }else{
-    const groups=state.view==='upcoming'?upcomingGroups(visible):[{key:'list',title:state.view==='calendar'?`Ngày ${shortDate(state.date||todayKey())}`:state.tag?TAG_NAMES[state.tag]:state.view==='today'?'Công việc hôm nay':'Danh sách công việc',date:state.view==='calendar'?(state.date||todayKey()):state.view==='today'?todayKey():'',tasks:visible}];
+    const groups=state.view==='upcoming'?upcomingGroups(visible):[{key:'list',title:state.view==='calendar'?`Ngày ${shortDate(state.date||todayKey())}`:state.tag?categoryName(state.tag):state.view==='today'?'Công việc hôm nay':'Danh sách công việc',date:state.view==='calendar'?(state.date||todayKey()):state.view==='today'?todayKey():'',tasks:visible}];
     for(const group of groups)list.append(renderGroup(group));
   }
   const done=visible.filter(t=>t.completed).length;
@@ -268,16 +303,20 @@ async function synchronize(){
       if(!preview&&navigator.onLine===false)throw new Error('Ngoại tuyến');
       await gateway.probe();
       const renew=async()=>{let ok=false;await store.mutate(s=>{if(s.lease?.owner===owner){s.lease.expires=Date.now()+30000;ok=true;}},false);if(!ok)throw new Error('Phiên khác đang đồng bộ.');};
-      await renew();const remote=await gateway.read();if(!Array.isArray(remote.tasks)||remote.tasks.some(t=>typeof t.client_id!=='string'))throw new Error('Dữ liệu máy chủ không tương thích.');
-      adopt(await store.mutate(s=>{if(s.lease?.owner===owner)s.serverTasks=remote.tasks;}));
+      await renew();const remote=await gateway.read();if(!Array.isArray(remote.tasks)||!Array.isArray(remote.categories)||remote.tasks.some(t=>typeof t.client_id!=='string'))throw new Error('Dữ liệu máy chủ không tương thích.');
+      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=remote.tasks;s.categories=remote.categories;}}));
       for(let i=0;i<100;i++){
         const current=await store.read();const operation=current.queue[0];if(!operation)break;
         await renew();const result=await gateway.push(operation);if(result.op_id!==operation.op_id||result.client_id!==operation.client_id)throw new Error('Phản hồi đồng bộ không hợp lệ.');
+        if(result.category&&result.category.id!==operation.client_id){
+          if(state.tag===operation.client_id)state.tag=result.category.id;
+          qa('[data-tag]').filter(input=>input.value===operation.client_id).forEach(input=>{input.value=result.category.id;});
+        }
         adopt(await store.mutate(s=>{if(s.lease?.owner===owner)acknowledge(s,operation.op_id,result);}));
         if(result.notice)announce(result.notice);
       }
-      await renew();const final=await gateway.read();if(!Array.isArray(final.tasks))throw new Error('Dữ liệu máy chủ không hợp lệ.');
-      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=final.tasks;if(!s.queue.length)s.lastSynced=new Date().toISOString();}}));
+      await renew();const final=await gateway.read();if(!Array.isArray(final.tasks)||!Array.isArray(final.categories))throw new Error('Dữ liệu máy chủ không hợp lệ.');
+      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=final.tasks;s.categories=final.categories;if(!s.queue.length)s.lastSynced=new Date().toISOString();}}));
       state.health='online';state.message='';state.storageError=false;
     }catch(error){
       if(error.permanent){state.message=error.message;state.health='error';}
@@ -312,7 +351,7 @@ function openComposer(day){
   updateComposer();q('[data-title]').focus();q('[data-composer]').scrollIntoView?.({block:'nearest',behavior:'auto'});
 }
 async function initialize(){
-  try{store=preview?new MemoryStore(bootstrap.tasks):await LocalStore.open(bootstrap.tasks);snapshot=await store.read();if(snapshot.schema!==1)throw new Error('Bộ nhớ có phiên bản không tương thích.');}
+  try{store=preview?new MemoryStore(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES):await LocalStore.open(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES);snapshot=await store.read();if(snapshot.schema!==1)throw new Error('Bộ nhớ có phiên bản không tương thích.');}
   catch(_){q('[data-banner]').hidden=false;q('[data-banner-text]').textContent='Trình duyệt không cho phép lưu dữ liệu ngoại tuyến. Các form cơ bản vẫn hoạt động khi có mạng.';q('[data-status]').textContent='Chưa bật lưu ngoại tuyến';q('[data-sync-detail]').textContent='Các form cơ bản cần kết nối máy chủ. Bộ nhớ ngoại tuyến chưa được bật.';q('[data-sync-now]').disabled=true;return;}
   for(const selector of ['[data-toolbar]','[data-views]','[data-categories]','[data-sort-control]','[data-date-presets]','[data-clear-date]','[data-counter]','[data-new-task]','[data-close-composer]'])q(selector).hidden=false;
   q('[data-composer]').hidden=true;if(narrow())q('[data-sidebar]').open=false;
@@ -321,12 +360,24 @@ async function initialize(){
   q('[data-close-composer]').addEventListener('click',()=>{clearComposer();q('[data-composer]').hidden=true;q('[data-new-task]').focus();});
   q('[data-title]').addEventListener('input',updateComposer);q('[data-cancel-edit]').addEventListener('click',()=>{clearComposer();q('[data-composer]').hidden=true;});
   q('[data-due-date]').addEventListener('change',()=>{if(!q('[data-due-date]').value)q('[data-due-time]').value='';updateComposer();});
-  q('[data-priority]').addEventListener('change',updateComposer);qa('[data-tag]').forEach(tag=>tag.addEventListener('change',updateComposer));
+  q('[data-priority]').addEventListener('change',updateComposer);root.addEventListener('change',event=>{if(event.target.matches('[data-tag]'))updateComposer();});
   q('[data-due-time]').addEventListener('change',()=>{if(q('[data-due-time]').value&&!q('[data-due-date]').value)q('[data-due-date]').value=todayKey();updateComposer();});
+  q('[data-category-form]').addEventListener('submit',async event=>{
+    event.preventDefault();const input=q('[data-category-name]'),name=input.value.trim().replace(/\s+/g,' '),color=q('[data-category-color]').value.toLowerCase();
+    const error=q('[data-category-error]');error.hidden=true;
+    if(!name||name.length>40||!/^#[0-9a-f]{6}$/.test(color)){error.textContent='Nhập tên từ 1 đến 40 ký tự và chọn màu hợp lệ.';error.hidden=false;input.focus();return;}
+    if(categories.some(c=>categoryNameKey(c.name)===categoryNameKey(name))){error.textContent='Phân loại này đã tồn tại. Hãy chọn nhóm trong danh sách.';error.hidden=false;input.focus();return;}
+    const button=q('[data-category-submit]');button.disabled=true;const id=uuid();
+    if(await commit('category_create',id,{name,color})){
+      state.view='all';state.tag=id;state.query='';q('[data-search]').value='';input.value='';q('[data-category-color]').value='#668dce';q('[data-category-create]').open=false;render();announce(`Đã thêm phân loại ${name}.`);q('[data-category-toggle]').focus();
+    }
+    button.disabled=false;
+  });
   q('[data-add-form]').addEventListener('submit',async event=>{
     event.preventDefault();const input=q('[data-title]'),title=input.value.trim();
     if(!title||input.value.length>200){q('[data-input-error]').textContent='Nhập tên công việc từ 1 đến 200 ký tự.';q('[data-input-error]').hidden=false;input.setAttribute('aria-invalid','true');input.focus();return;}
     const payload={title,due_date:q('[data-due-date]').value||null,due_time:q('[data-due-time]').value||null,priority:Number(q('[data-priority]').value),tags:qa('[data-tag]').filter(t=>t.checked).map(t=>t.value),completed:state.editKey?Boolean(all.find(t=>t.client_id===state.editKey)?.completed):false};
+    if(payload.tags.length>10){q('[data-input-error]').textContent='Mỗi công việc được gắn tối đa 10 phân loại.';q('[data-input-error]').hidden=false;return;}
     if(payload.due_time&&!payload.due_date){q('[data-input-error]').textContent='Hãy chọn ngày trước khi đặt giờ.';q('[data-input-error]').hidden=false;return;}
     q('[data-add-button]').disabled=true;
     if(await commit(state.editKey?'update':'create',state.editKey||uuid(),payload)){clearComposer();input.value='';q('[data-due-date]').value='';q('[data-due-time]').value='';q('[data-priority]').value='0';qa('[data-tag]').forEach(tag=>tag.checked=false);qa('[data-command]').forEach(command=>command.open=false);q('[data-composer]').hidden=true;render();announce('Đã lưu công việc trên thiết bị.');q('[data-new-task]').focus();}
@@ -343,6 +394,7 @@ async function initialize(){
     if(target.hasAttribute('data-edit')){const task=all.find(t=>t.client_id===target.closest('[data-task]').dataset.key);if(task){state.editKey=task.client_id;q('[data-composer]').hidden=false;q('[data-composer-heading]').textContent='Sửa công việc';q('[data-title]').value=task.title;q('[data-due-date]').value=task.due_date||'';q('[data-due-time]').value=task.due_time||'';q('[data-priority]').value=String(task.priority);qa('[data-tag]').forEach(t=>t.checked=task.tags.includes(t.value));q('[data-add-label]').textContent='Lưu';q('[data-cancel-edit]').hidden=false;updateComposer();q('[data-title]').focus();q('[data-add-form]').scrollIntoView?.({block:'center'});}}
     if(target.dataset.datePreset){const today=todayKey();const value=target.dataset.datePreset;q('[data-due-date]').value=value==='today'?today:value==='tomorrow'?plusDays(today,1):plusDays(today,(6-parseDay(today).getDay()+7)%7);updateComposer();target.closest('details').open=false;q('[data-title]').focus();}
     if(target.hasAttribute('data-clear-date')){q('[data-due-date]').value='';q('[data-due-time]').value='';updateComposer();target.closest('details').open=false;}
+    if(target.hasAttribute('data-category-cancel')){q('[data-category-create]').open=false;q('[data-category-toggle]').focus();}
     if(target.hasAttribute('data-new-day'))openComposer(target.dataset.newDay);
     if(target.dataset.category){state.view='all';state.tag=target.dataset.category;state.query='';q('[data-search]').value='';render();closeMenuOnMobile();publish();}
     if(target.dataset.view){state.tag=null;state.query='';q('[data-search]').value='';state.view=target.dataset.view;state.date=state.view==='calendar'?todayKey():null;if(state.view==='today'||state.view==='calendar'){state.week=monday(todayKey());state.month=todayKey().slice(0,7);}render();closeMenuOnMobile();publish();}
@@ -380,7 +432,7 @@ async function initialize(){
     root.workspacePreview={
       toggleNetwork:()=>{gateway.setOnline(!gateway.isOnline());if(!gateway.isOnline())state.health='offline';renderStatus();publish();if(gateway.isOnline())scheduleSync();return gateway.isOnline();},
       getState:()=>({schema:1,snapshot:{...clone(snapshot),lease:null},ui:{view:state.view,tag:state.tag,date:state.date,week:state.week,month:state.month,sort:state.sort,query:state.query,theme:root.dataset.theme},online:gateway.isOnline()}),
-      setState:async saved=>{if(saved?.schema!==1||saved.snapshot?.schema!==1||!Array.isArray(saved.snapshot.queue)||!Array.isArray(saved.snapshot.serverTasks))return;gateway.restore(saved.snapshot.serverTasks);await store.mutate(s=>Object.assign(s,clone(saved.snapshot),{lease:null}));Object.assign(state,saved.ui||{});applyTheme(saved.ui?.theme||'light');q('[data-sort]').value=state.sort;q('[data-search]').value=state.query;gateway.setOnline(saved.online!==false);state.health=saved.online===false?'offline':'unknown';snapshot=await store.read();render();},
+      setState:async saved=>{if(saved?.schema!==1||saved.snapshot?.schema!==1||!Array.isArray(saved.snapshot.queue)||!Array.isArray(saved.snapshot.serverTasks))return;gateway.restore(saved.snapshot.serverTasks,saved.snapshot.categories||DEFAULT_CATEGORIES);await store.mutate(s=>Object.assign(s,clone(saved.snapshot),{lease:null}));Object.assign(state,saved.ui||{});applyTheme(saved.ui?.theme||'light');q('[data-sort]').value=state.sort;q('[data-search]').value=state.query;gateway.setOnline(saved.online!==false);state.health=saved.online===false?'offline':'unknown';snapshot=await store.read();render();},
       sync:synchronize
     };
   }

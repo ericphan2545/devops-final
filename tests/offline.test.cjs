@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {connectionStatus,project,visibleTasks,upcomingGroups,acknowledge,emptyState,plusDays,monday,normalize,createDemoGateway}=require('../app/static/app.js');
+const {DEFAULT_CATEGORIES,projectCategories,categoryNameKey,connectionStatus,project,visibleTasks,upcomingGroups,acknowledge,emptyState,plusDays,monday,normalize,createDemoGateway}=require('../app/static/app.js');
 // A reachable HTTP server is not proof that the task/database API synchronized.
 assert.equal(connectionStatus({health:'online',syncing:false},0).status,'online');
 for(const health of ['unknown','error','unavailable','waiting','offline']){
@@ -34,6 +34,17 @@ assert.equal(visibleTasks([task],'all',null,'','newest','2026-10-27','devops').l
 assert.equal(visibleTasks([task],'all',null,'','newest','2026-10-27','ca-nhan').length,0);
 acknowledge(s,'b',{client_id:task.client_id,task:{...task,completed:true}});assert.equal(s.queue.length,2);
 acknowledge(s,'b',{client_id:task.client_id,task:{...task,completed:false}});assert.equal(s.serverTasks[0].completed,true,'stale duplicate ack must not overwrite a later state');
+const categoryState=emptyState([]);
+categoryState.queue.push({op_id:'category',type:'category_create',client_id:'local-category',payload:{name:'Sức khỏe',color:'#668dce'}});
+categoryState.queue.push({op_id:'tagged-task',type:'create',client_id:'local-task',payload:{title:'Đi bộ',tags:['local-category']}});
+assert.equal(project(categoryState).length,1,'category operations do not create phantom tasks');
+assert.equal(projectCategories(categoryState).length,4);
+assert.equal(projectCategories(categoryState).find(c=>c.id==='local-category').pending,true);
+assert.equal(categoryNameKey('  HỌC   TẬP '),categoryNameKey('hoc tap'));
+acknowledge(categoryState,'category',{client_id:'local-category',category:DEFAULT_CATEGORIES.find(c=>c.id==='hoc-tap')});
+assert.deepEqual(categoryState.queue[0].payload.tags,['hoc-tap'],'canonical duplicate ID remaps queued task before send');
+assert.equal(projectCategories(categoryState).length,3);
+assert.equal(projectCategories({queue:[]}).length,3,'old snapshots retain legacy categories');
 (async()=>{
  const api=createDemoGateway([task]);const op={op_id:'once',type:'create',client_id:'new',payload:{...task,title:'offline'}};
  api.setOnline(false);await assert.rejects(()=>api.push(op));api.setOnline(true);
