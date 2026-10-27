@@ -4,6 +4,8 @@
 # Máy tự chạy 1 lần lúc khởi động đầu tiên, mất khoảng 5 phút.
 # Xem tiến độ / lỗi trên server: sudo tail -f /var/log/setup-server.log
 set -euxo pipefail
+# Log có mật khẩu DB và token DuckDNS (do set -x in ra), nên chỉ root đọc được
+install -m 600 /dev/null /var/log/setup-server.log
 exec > /var/log/setup-server.log 2>&1
 
 REPO_URL="https://github.com/ericphan2545/devops-final.git"
