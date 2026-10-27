@@ -1,8 +1,32 @@
--- Tạo bảng cho app todo.
--- Lưu ý: PostgreSQL chỉ chạy file này MỘT LẦN, khi volume dữ liệu còn trống
--- (lần đầu chạy docker compose up). Sửa file này sau đó sẽ không có tác dụng.
+-- Non-destructive schema, also applied by app/migrate.py on container startup.
 CREATE TABLE IF NOT EXISTS todos (
-    id         SERIAL PRIMARY KEY,
-    title      TEXT NOT NULL,
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    client_id UUID,
+    due_date DATE,
+    due_time TIME,
+    priority SMALLINT NOT NULL DEFAULT 0,
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS client_id UUID;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_time TIME;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS priority SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS completed BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE todos ALTER COLUMN client_id SET DEFAULT gen_random_uuid();
+CREATE UNIQUE INDEX IF NOT EXISTS todos_client_id_unique ON todos(client_id);
+CREATE TABLE IF NOT EXISTS todo_operations (
+    op_id UUID PRIMARY KEY,
+    request_hash TEXT NOT NULL,
+    result JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS todo_tombstones (
+    client_id UUID PRIMARY KEY,
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
