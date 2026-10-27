@@ -62,3 +62,6 @@ def test_delete_removes_todo(client):
     assert res.status_code == 302
     page = client.get("/").get_data(as_text=True)
     assert title not in page
+
+def test_demo_pipeline_block():
+    assert False, "DEMO: This test is intentionally failing"
