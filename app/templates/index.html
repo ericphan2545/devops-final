@@ -1,60 +1,113 @@
 <!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <title>Công việc · Todo</title>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark">
+  <title>Todo · DevOps Final Project</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script defer src="{{ url_for('static', filename='app.js') }}"></script>
 </head>
-<body>
-  <svg class="icon-library" aria-hidden="true"><defs>
-    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
-    <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></symbol>
-    <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20.2 15.4A8.8 8.8 0 0 1 8.6 3.8a8.8 8.8 0 1 0 11.6 11.6Z"/></symbol>
-    <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></symbol>
-    <symbol id="icon-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h7M4 6h.01M4 12h.01M4 18h.01"/></symbol>
-    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
-    <symbol id="icon-sort" viewBox="0 0 24 24"><path d="M8 4v16m-4-4 4 4 4-4M16 20V4m-4 4 4-4 4 4"/></symbol>
-  </defs></svg>
-  <a class="skip-link" href="#main">Đến danh sách công việc</a>
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand" href="/" aria-label="Todo — trang chủ"><span class="brand-mark" aria-hidden="true"><svg><use href="#icon-list"/></svg></span>todo<span class="brand-period">.</span></a>
-      <div class="header-actions"><span class="header-caption">Không gian làm việc</span><button type="button" class="icon-button" id="theme-toggle" aria-label="Chuyển sang giao diện tối" aria-pressed="false" title="Chuyển giao diện sáng/tối" hidden><svg aria-hidden="true"><use id="theme-icon" href="#icon-moon"/></svg></button></div>
-    </div>
-  </header>
-  <main id="main" class="page">
-    <section class="page-heading" aria-labelledby="page-title"><p class="eyebrow">GỌN GÀNG HƠN, TẬP TRUNG HƠN</p><h1 id="page-title">Công việc của bạn.</h1><p class="intro">Ghi lại điều cần làm. Dành tâm trí cho điều quan trọng.</p></section>
-    <section class="composer" aria-labelledby="composer-title">
-      <h2 id="composer-title" class="sr-only">Thêm công việc</h2>
-      <form id="add-form" method="post" action="/add">
-        <label class="sr-only" for="title">Tên công việc mới</label>
-        <div class="input-row"><svg class="input-plus" aria-hidden="true"><use href="#icon-plus"/></svg><input id="title" name="title" type="text" placeholder="Thêm một công việc mới…" maxlength="200" required autocomplete="off" aria-describedby="add-error"><button class="primary-button" id="add-button" type="submit"><svg aria-hidden="true"><use href="#icon-plus"/></svg><span>Thêm việc</span></button></div>
-        <div class="composer-meta"><span>Viết một việc cụ thể, dễ bắt đầu.</span><span id="character-count" hidden>0 / 200</span></div><p id="add-error" class="field-error" role="alert" hidden></p>
-      </form>
-    </section>
-    <section class="collection" aria-labelledby="list-title">
-      <div class="collection-heading"><div class="collection-label"><h2 id="list-title">Tất cả công việc</h2><span class="count-badge">{{ todos|length }}</span></div><span class="collection-note">Một việc tại một thời điểm.</span></div>
-      <div class="toolbar" id="toolbar" hidden>
-        <div class="search-field"><svg aria-hidden="true"><use href="#icon-search"/></svg><label for="search" class="sr-only">Tìm công việc</label><input id="search" type="search" placeholder="Tìm công việc…" autocomplete="off"><kbd aria-hidden="true">/</kbd></div>
-        <div class="sort-field"><svg aria-hidden="true"><use href="#icon-sort"/></svg><label for="sort" class="sr-only">Sắp xếp công việc</label><select id="sort"><option value="oldest">Cũ nhất trước</option><option value="newest">Mới nhất trước</option><option value="name">Tên A → Z</option></select></div>
+<body class="ow-body">
+{% macro icon(name) %}<svg class="ow-icon" aria-hidden="true"><use href="#ow-{{ name }}"/></svg>{% endmacro %}
+{% macro row(todo=none) %}
+<li class="ow-task{% if todo and todo.completed %} is-completed{% endif %}" data-task{% if todo %} data-key="{{ todo.client_id }}"{% endif %}>
+  <form method="post" action="{% if todo %}/complete/{{ todo.id }}{% else %}#{% endif %}" data-complete-form>
+    <input type="hidden" name="completed" value="{% if todo and todo.completed %}false{% else %}true{% endif %}">
+    <button class="ow-check" type="submit" role="checkbox" aria-checked="{{ 'true' if todo and todo.completed else 'false' }}" aria-label="{{ 'Đánh dấu chưa hoàn thành' if todo and todo.completed else 'Đánh dấu hoàn thành' }}" data-check>{{ icon('check') }}</button>
+  </form>
+  <div class="ow-task-content">
+    <span class="ow-task-title" data-task-title>{{ todo.title if todo else '' }}</span>
+    <div class="ow-task-meta"><span class="ow-id" data-task-id>{% if todo %}#{{ todo.id }}{% endif %}</span><div class="ow-badges" data-badges>
+      {% if todo and todo.due_date %}<span class="ow-pill">{{ todo.due_date }}{% if todo.due_time %} · {{ todo.due_time }}{% endif %}</span>{% endif %}
+      {% if todo %}{% for tag in todo.tags %}<span class="ow-tag tag-{{ tag }}">{{ tag_names[tag] }}</span>{% endfor %}{% if todo.priority %}<span class="ow-priority p{{ todo.priority }}">{{ {1:'Cao',2:'Trung bình',3:'Thấp'}[todo.priority] }}</span>{% endif %}{% endif %}
+    </div></div>
+  </div>
+  <div class="ow-task-actions"><button type="button" class="ow-edit" data-edit aria-label="Sửa công việc" hidden>{{ icon('right') }}</button>
+    <form method="post" action="{% if todo %}/delete/{{ todo.id }}{% else %}#{% endif %}" data-delete-form><button class="ow-delete" type="submit" aria-label="Xoá công việc" data-delete>Xoá</button></form>
+  </div>
+</li>
+{% endmacro %}
+<div class="ow-app" id="todo-workspace" data-mode="server">
+<svg class="ow-sprite" aria-hidden="true"><defs>
+  <symbol id="ow-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h8M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="ow-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="ow-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="ow-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18"/></symbol>
+  <symbol id="ow-today" viewBox="0 0 24 24"><path d="M9 5h12M9 12h12M9 19h8M3 5h2M3 12h2M3 19h2"/></symbol>
+  <symbol id="ow-upcoming" viewBox="0 0 24 24"><path d="m4 7 5 5-5 5m8-10 5 5-5 5"/></symbol>
+  <symbol id="ow-menu" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></symbol>
+  <symbol id="ow-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="ow-flag" viewBox="0 0 24 24"><path d="M5 21V3c5-3 9 3 14 0v11c-5 3-9-3-14 0"/></symbol>
+  <symbol id="ow-tag" viewBox="0 0 24 24"><path d="M3 3h8l10 10-8 8L3 11Z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
+  <symbol id="ow-moon" viewBox="0 0 24 24"><path d="M20.2 15.4A8.8 8.8 0 0 1 8.6 3.8a8.8 8.8 0 1 0 11.6 11.6Z"/></symbol>
+  <symbol id="ow-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></symbol>
+  <symbol id="ow-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="ow-settings" viewBox="0 0 24 24"><path d="M3 6h8m4 0h6M3 12h2m4 0h12M3 18h10m4 0h4"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="15" cy="18" r="2"/></symbol>
+  <symbol id="ow-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="ow-sync" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18a8 8 0 0 1-13-3"/></symbol>
+</defs></svg>
+<a class="ow-skip" href="#ow-main">Đến danh sách công việc</a>
+<div class="ow-shell">
+  <div class="ow-workspace">
+    <details class="ow-sidebar" data-sidebar open>
+      <summary class="ow-menu-heading"><span>Danh mục</span>{{ icon('menu') }}</summary>
+      <div class="ow-sidebar-content">
+        <p class="ow-sidebar-brand">Todo <span>· không gian của bạn</span></p>
+        <div data-toolbar hidden>
+          <label class="ow-search">{{ icon('search') }}<span class="ow-sr-only">Tìm công việc</span><input type="search" placeholder="Tìm công việc…" aria-label="Tìm công việc" autocomplete="off" data-search><button type="button" class="ow-clear-search" aria-label="Xoá từ khoá" data-clear-search hidden>×</button><button type="button" class="ow-shortcut" aria-label="Tìm nhanh, phím gạch chéo" data-search-shortcut>/</button></label>
+        </div>
+        <nav class="ow-navigation" aria-label="Menu công việc" data-views hidden>
+          <p class="ow-section-label">CÔNG VIỆC</p>
+          <button class="ow-nav-item" type="button" data-view="upcoming" aria-current="page">{{ icon('upcoming') }}<span>Sắp tới</span><span class="ow-nav-count" data-nav-count="upcoming">0</span></button>
+          <button class="ow-nav-item" type="button" data-view="today">{{ icon('today') }}<span>Hôm nay</span><span class="ow-nav-count" data-nav-count="today">0</span></button>
+          <button class="ow-nav-item" type="button" data-view="all">{{ icon('list') }}<span>Tất cả</span><span class="ow-nav-count" data-nav-count="all">{{ todos|length }}</span></button>
+          <button class="ow-nav-item" type="button" data-view="calendar">{{ icon('calendar') }}<span>Lịch công việc</span></button>
+        </nav>
+        <section class="ow-category-section" aria-labelledby="ow-categories" data-categories hidden>
+          <h2 class="ow-section-label" id="ow-categories">PHÂN LOẠI</h2>
+          {% for key,label in [('ca-nhan','Cá nhân'),('devops','DevOps'),('hoc-tap','Học tập')] %}<button class="ow-nav-item" type="button" data-category="{{ key }}" aria-pressed="false"><span class="ow-category-dot tag-{{ key }}" aria-hidden="true"></span><span>{{ label }}</span><span class="ow-nav-count" data-category-count="{{ key }}">0</span></button>{% endfor %}
+        </section>
+        <div class="ow-sidebar-bottom"><button class="ow-nav-item ow-settings-link" type="button" data-open-settings hidden>{{ icon('settings') }}<span>Cài đặt</span></button><p class="ow-sidebar-note">Từng việc nhỏ. Một ngày gọn hơn.</p></div>
       </div>
-      <div class="list-surface"><ul id="task-list" class="task-list">
-      {% for todo in todos %}
-        <li class="task" data-id="{{ todo[0] }}"><span class="task-marker" aria-hidden="true"></span><span class="task-title">{{ todo[1] }}</span><form method="post" action="/delete/{{ todo[0] }}" class="delete-form"><button class="icon-button delete-button" type="submit" aria-label="Xoá công việc: {{ todo[1] }}" title="Xoá công việc"><svg aria-hidden="true"><use href="#icon-trash"/></svg></button></form></li>
-      {% else %}
-        <li class="empty-state"><span class="empty-icon" aria-hidden="true"><svg><use href="#icon-list"/></svg></span><h3>Chưa có công việc nào</h3><p>Bắt đầu bằng một việc nhỏ bạn muốn làm.</p><a class="text-link" href="#title">Thêm công việc đầu tiên <span aria-hidden="true">↗</span></a></li>
-      {% endfor %}
-      </ul>
-      <div id="no-results" class="empty-state" hidden><span class="empty-icon" aria-hidden="true"><svg><use href="#icon-search"/></svg></span><h3>Không tìm thấy công việc</h3><p>Thử từ khoá khác hoặc xem lại toàn bộ danh sách.</p><button class="text-link" type="button" id="clear-search">Xoá tìm kiếm <span aria-hidden="true">↗</span></button></div>
-      </div>
-      <div class="list-meta"><span id="result-count" role="status" aria-live="polite">{{ todos|length }} công việc trong danh sách</span><span class="keyboard-hint" id="keyboard-hint" hidden>Nhấn <kbd>/</kbd> để tìm kiếm</span></div>
-    </section>
-    <footer class="footer"><span>Todo <span class="footer-separator">/</span> DevOps Final Project</span><span class="version">Phiên bản <code>{{ version }}</code></span></footer>
-  </main>
-  <dialog id="delete-dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description"><form method="dialog" class="dialog-content"><div class="dialog-heading"><span class="dialog-icon" aria-hidden="true"><svg><use href="#icon-trash"/></svg></span><button class="icon-button" value="cancel" aria-label="Đóng hộp thoại"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></div><h2 id="dialog-title">Xoá công việc này?</h2><p id="dialog-description">Công việc sẽ bị xoá khỏi danh sách. Bạn không thể hoàn tác thao tác này.</p><p id="delete-title" class="delete-title"></p><div class="dialog-actions"><button class="secondary-button" value="cancel" autofocus>Giữ lại</button><button class="danger-button" value="delete">Xoá công việc</button></div></form></dialog>
+    </details>
+    <main id="ow-main" class="ow-main">
+      <header class="ow-heading"><div class="ow-title-line"><h1 data-page-title>Tất cả</h1><span class="ow-total" data-total>{{ todos|length }}</span></div><button class="ow-button ow-primary" type="button" data-new-task hidden>{{ icon('plus') }}Thêm việc</button></header>
+      <div class="ow-subheading"><p data-view-description>Mọi công việc, ở cùng một nơi.</p><label class="ow-sort" data-sort-control hidden><span class="ow-sr-only">Sắp xếp công việc</span><select data-sort><option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option><option value="name">Tên A–Z</option><option value="due">Ngày hẹn</option><option value="priority">Độ ưu tiên</option></select></label></div>
+      <section class="ow-daily-progress" data-daily-progress aria-labelledby="ow-daily-progress-title" hidden><h2 id="ow-daily-progress-title">Tiến độ hôm nay</h2><div class="ow-progress-content"><div class="ow-progress-ring" data-progress-ring role="img" aria-label="Tiến độ hôm nay"><span data-progress-value>0%</span></div><div><strong data-progress-text>Chưa có công việc</strong><p data-progress-detail>Gắn lịch để theo dõi tiến độ.</p></div></div></section>
+      <div class="ow-banner" role="status" data-banner hidden><span data-banner-text></span><button class="ow-text-button" type="button" data-open-settings>Cài đặt</button></div>
+      <section class="ow-composer" aria-labelledby="ow-composer-heading" data-composer>
+        <div class="ow-composer-heading"><h2 id="ow-composer-heading" data-composer-heading>Thêm công việc</h2><button class="ow-small-button" type="button" data-close-composer aria-label="Đóng ô thêm công việc" hidden>{{ icon('close') }}</button></div>
+        <form action="/add" method="post" data-add-form>
+          <label class="ow-sr-only" for="ow-title">Tên công việc</label>
+          <div class="ow-add-row"><div class="ow-input-wrap"><input id="ow-title" name="title" type="text" required maxlength="200" autocomplete="off" placeholder="Bạn muốn làm gì?" data-title aria-describedby="ow-input-error ow-counter"><output for="ow-title" id="ow-counter" class="ow-counter" data-counter hidden>0/200</output></div><button type="submit" class="ow-button ow-primary" data-add-button><span data-add-label>Thêm</span></button></div>
+          <div class="ow-command-tools">
+            <details class="ow-command" data-command><summary>{{ icon('calendar') }}<span data-date-label>Lên lịch</span></summary><div class="ow-command-popover"><span class="ow-field-label">Ngày thực hiện</span><div class="ow-date-presets" data-date-presets hidden><button type="button" data-date-preset="today">Hôm nay</button><button type="button" data-date-preset="tomorrow">Ngày mai</button><button type="button" data-date-preset="weekend">Cuối tuần</button></div><label class="ow-field-label" for="ow-due-date">Chọn ngày</label><input id="ow-due-date" name="due_date" type="date" data-due-date><label class="ow-field-label" for="ow-due-time">Giờ (không bắt buộc)</label><input id="ow-due-time" name="due_time" type="time" data-due-time><button type="button" class="ow-text-button" data-clear-date hidden>Bỏ lịch</button></div></details>
+            <details class="ow-command" data-command><summary>{{ icon('flag') }}<span data-priority-label>Ưu tiên</span></summary><div class="ow-command-popover"><label class="ow-field-label" for="ow-priority">Mức độ ưu tiên</label><select id="ow-priority" name="priority" data-priority><option value="0">Không đặt</option><option value="1">Cao</option><option value="2">Trung bình</option><option value="3">Thấp</option></select></div></details>
+            <details class="ow-command" data-command><summary>{{ icon('tag') }}<span data-tags-label>Gắn thẻ</span></summary><div class="ow-command-popover"><fieldset><legend class="ow-field-label">Phân loại công việc</legend>{% for key,name in [('hoc-tap','Học tập'),('devops','DevOps'),('ca-nhan','Cá nhân')] %}<label class="ow-tag-option"><input type="checkbox" name="tags" value="{{ key }}" data-tag> {{ name }}</label>{% endfor %}</fieldset></div></details>
+            <button class="ow-text-button" type="button" data-cancel-edit hidden>Huỷ chỉnh sửa</button>
+          </div>
+          <p id="ow-input-error" class="ow-field-error" role="alert" data-input-error hidden></p>
+        </form>
+      </section>
+      <div class="ow-main-calendar" data-main-calendar hidden></div>
+      <div class="ow-week-section" data-week-section hidden><div class="ow-week-heading"><span data-week-label></span><div><button class="ow-small-button" aria-label="Tuần trước" type="button" data-week-nav="-1">‹</button><button class="ow-text-button" type="button" data-this-week>Tuần này</button><button class="ow-small-button" aria-label="Tuần sau" type="button" data-week-nav="1">›</button></div></div><div class="ow-week" data-week></div></div>
+      <section id="ow-task-region" aria-label="Danh sách công việc"><div class="ow-board" data-list><section class="ow-task-group"><h2>Công việc của bạn</h2><ul class="ow-task-list">{% for todo in todos %}{{ row(todo) }}{% else %}<li class="ow-empty"><h3>Chưa có công việc nào</h3><p>Thêm một việc nhỏ để bắt đầu.</p></li>{% endfor %}</ul></section></div></section>
+      <footer class="ow-list-meta"><span data-result-count role="status" aria-live="polite">{{ todos|length }} công việc</span><button type="button" class="ow-text-button" data-clear-filter hidden>Bỏ bộ lọc</button></footer>
+    </main>
+  </div>
+  <p class="ow-sr-only" role="status" aria-live="polite" data-announcement></p>
+</div>
+<dialog class="ow-settings ow-dialog" data-settings-dialog aria-labelledby="ow-settings-title">
+  <div class="ow-settings-header"><div><p class="ow-eyebrow">KHÔNG GIAN CỦA BẠN</p><h2 id="ow-settings-title">Cài đặt</h2></div><button class="ow-small-button" type="button" data-settings-close aria-label="Đóng cài đặt" autofocus>{{ icon('close') }}</button></div>
+  <div class="ow-settings-content">
+    <section class="ow-setting-section"><h3>Giao diện</h3><div class="ow-setting-row"><div><strong>Sáng & tối</strong><p>Ghi nhớ lựa chọn trên trình duyệt này.</p></div><button class="ow-button ow-secondary" type="button" data-theme-toggle aria-pressed="false"><span class="ow-theme-moon">{{ icon('moon') }}</span><span class="ow-theme-sun">{{ icon('sun') }}</span><span data-theme-label>Chuyển sang tối</span></button></div></section>
+    <section class="ow-setting-section"><h3>Kết nối & đồng bộ</h3><p class="ow-connection" role="status"><span class="ow-status-dot" data-status-dot aria-hidden="true"></span><span data-status>Chưa kiểm tra kết nối</span></p><p class="ow-sync-description" data-sync-detail>Đang kiểm tra kết nối.</p><p class="ow-sync-error" role="status" data-sync-error hidden></p><dl class="ow-settings-facts"><div><dt>Thay đổi chờ gửi</dt><dd data-queue-count>0</dd></div><div><dt>Đồng bộ lần cuối</dt><dd data-last-sync>Chưa có</dd></div></dl><button class="ow-button ow-secondary" type="button" data-sync-now>{{ icon('sync') }}<span data-sync-label>Đồng bộ ngay</span></button><p class="ow-storage-note" data-offline-capability></p><div data-preview-settings></div></section>
+    <section class="ow-setting-section"><h3>Thông tin ứng dụng</h3><dl class="ow-settings-facts"><div><dt>Ứng dụng</dt><dd>Todo · DevOps Final Project</dd></div><div><dt>Phiên bản</dt><dd><code>{{ version }}</code></dd></div><div><dt>Dữ liệu trên thiết bị</dt><dd data-stored-count>{{ todos|length }} việc</dd></div></dl></section>
+  </div>
+  <div class="ow-settings-footer"><span><kbd>Esc</kbd> để đóng</span><button class="ow-button ow-primary" type="button" data-settings-close>Xong</button></div>
+</dialog>
+<dialog class="ow-dialog ow-delete-dialog" data-delete-dialog aria-labelledby="ow-delete-title" aria-describedby="ow-delete-description"><div class="ow-dialog-body"><p class="ow-eyebrow">XÁC NHẬN THAO TÁC</p><h2 id="ow-delete-title">Xoá công việc này?</h2><p id="ow-delete-description">Công việc sẽ bị xoá khỏi danh sách. Khi ngoại tuyến, thao tác được lưu và gửi khi kết nối trở lại.</p><p class="ow-delete-preview" data-delete-preview></p><div class="ow-dialog-bottom"><span><kbd>Esc</kbd> để huỷ</span><div><button class="ow-button ow-secondary" type="button" data-delete-cancel autofocus>Giữ lại</button><button class="ow-button ow-danger" type="button" data-delete-confirm>Xoá</button></div></div></div></dialog>
+<template data-task-template>{{ row() }}</template>
+<script type="application/json" id="ow-bootstrap">{{ initial_state | tojson }}</script>
+</div>
 </body>
 </html>
