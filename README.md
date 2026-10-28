@@ -339,7 +339,7 @@ Trên UI, kiểm tra thêm: tạo nhóm mới, gắn vào việc, lọc/tìm kh�
 
 `db-data` giữ dữ liệu khi thay hoặc tạo lại container trên cùng host. Volume không phải bản sao lưu khi host/ổ đĩa bị mất. `docker compose down -v` xoá volume; không dùng lệnh đó để đổi UI hoặc nâng schema.
 
-`app/entrypoint.sh` chạy migration trước Gunicorn. Migration bổ sung metadata, UUID, nhật ký thao tác, tombstone và bảng phân loại; giữ công việc và ba ID phân loại cũ. Có thể chạy migration lại mà không seed trùng hoặc xoá nhóm tuỳ chỉnh.
+`app/entrypoint.sh` chạy migration trước Gunicorn. Migration bổ sung metadata, UUID, nhật ký thao tác, tombstone và bảng phân loại; giữ công việc và ba ID phân loại cũ. Có thể chạy migration lại mà không seed trùng hoặc xoá nhóm tuỳ chỉnh. Migration dùng khoá giao dịch; công việc cũ được cấp UUID và `client_id` có default PostgreSQL để cách ghi cũ chỉ có title vẫn hoạt động.
 
 `db/init.sql` chỉ được PostgreSQL tự chạy khi khởi tạo thư mục dữ liệu rỗng. Sửa file này không tự nâng cấp volume cũ; cần rebuild/chạy app để entrypoint thực hiện migration. Sau khi có bản cập nhật:
 
@@ -381,7 +381,7 @@ Chi tiết: [docs/offline-first.md](docs/offline-first.md) và [docs/production-
 | `POST /api/operations` | Thao tác `create`, `update`, `delete`, `category_create` |
 | `GET /service-worker.js` | Bộ nhớ trang ngoại tuyến, scope `/` |
 
-API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên.
+API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo nhóm, chưa hỗ trợ sửa tên hoặc xoá phân loại.
 
 ## 12. Minh chứng tuần 1 và tuần 2
 
