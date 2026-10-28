@@ -167,7 +167,8 @@ Minh chứng CI/CD cần được ghi từ GitHub Actions và server thực tế
 - Xem Tất cả, Hôm nay, Sắp tới và Lịch; nhóm ngày không lặp công việc, lịch có chấm báo ngày có việc.
 - Tìm kiếm tiếng Việt có/không dấu bằng phím `/`; sắp xếp theo ID, tên, ngày hẹn hoặc ưu tiên.
 - Tiến độ hôm nay nằm trên danh sách, tính từ dữ liệu thực của ngày đó.
-- Nút **+** cạnh PHÂN LOẠI tạo nhóm có tên tối đa 40 ký tự và màu riêng; kiểm tra tên trùng, lưu nhóm vào PostgreSQL. Ba nhóm Cá nhân, DevOps, Học tập được giữ sẵn; mỗi việc gắn tối đa 10 nhóm.
+- Nút **+** cạnh PHÂN LOẠI tạo nhóm có tên tối đa 40 ký tự và màu riêng; kiểm tra tên trùng, lưu nhóm vào PostgreSQL. Ba nhóm Cá nhân, DevOps, Học tập được tạo ban đầu; mỗi việc gắn tối đa 10 nhóm.
+- Menu **⋯** cạnh mỗi phân loại có thao tác **Xoá phân loại**, kèm xác nhận và số việc bị gỡ nhãn. Chỉ xoá nhãn, giữ nguyên công việc và các nhãn khác; nhóm đang xem bị xoá sẽ chuyển về Tất cả. Trên desktop, nút hiện khi rê chuột hoặc focus; trên màn hình cảm ứng nút luôn hiển thị.
 - Cài đặt tập trung phần giao diện, kết nối, hàng đợi, đồng bộ thủ công và phiên bản.
 - IndexedDB giữ thao tác ngoại tuyến; khi kết nối phục hồi, gửi hàng đợi và đọc lại dữ liệu từ server. Không báo đã đồng bộ chỉ dựa vào việc máy có Internet.
 - Form thêm/hoàn thành/xoá vẫn gửi POST chuẩn khi JavaScript bị tắt; tìm kiếm tại chỗ, lịch tương tác, modal và offline cần JavaScript.
@@ -323,7 +324,7 @@ Linux/macOS/Git Bash:
 DB_HOST=localhost PGPORT=55432 DB_NAME=todo_test DB_USER=todo DB_PASSWORD=testpass python -m pytest -v
 ```
 
-Test tạo schema ngẫu nhiên riêng rồi dọn khi xong. Bộ test của bản UI/phân loại đã được kiểm tra với **29 trường hợp pytest** trên PostgreSQL; đây là kết quả kiểm thử cục bộ, không phải xác nhận trạng thái một lần chạy GitHub Actions.
+Test tạo schema ngẫu nhiên riêng rồi dọn khi xong. Bộ test của bản UI/phân loại đã được kiểm tra với **36 trường hợp pytest** trên PostgreSQL; đây là kết quả kiểm thử cục bộ, không phải xác nhận trạng thái một lần chạy GitHub Actions.
 
 Kiểm thử logic bonus bằng Node.js, không cần cài thư viện frontend:
 
@@ -354,7 +355,7 @@ Sao lưu DB trước thay đổi lớn. Đổi mật khẩu trong `.env` không 
 
 Thao tác được ghi vào IndexedDB trước khi báo đã lưu. Mỗi công việc và thao tác có UUID ổn định; server lưu kết quả thao tác trong cùng giao dịch với thay đổi dữ liệu. Khi mất phản hồi, client gửi lại cùng `op_id` và server trả kết quả đã có.
 
-Chỉ xoá thao tác khỏi hàng đợi sau xác nhận hợp lệ. Xoá thắng cập nhật cũ nhờ tombstone. Hai thiết bị sửa cùng trường dùng giá trị server nhận sau cùng; đây chưa phải hệ thống cộng tác có lịch sử phiên bản. Phân loại mới được gửi trước công việc tham chiếu tới nhóm đó.
+Chỉ xoá thao tác khỏi hàng đợi sau xác nhận hợp lệ. Xoá thắng cập nhật cũ nhờ tombstone. Hai thiết bị sửa cùng trường dùng giá trị server nhận sau cùng; đây chưa phải hệ thống cộng tác có lịch sử phiên bản. Phân loại mới được gửi trước công việc tham chiếu tới nhóm đó. Xoá nhóm được ghi vào hàng đợi `category_delete`; server giữ bản ghi trong `todo_category_tombstones` và `/api/tasks` trả `deletedCategories`. Thao tác cũ từ thiết bị khác vẫn lưu được nội dung công việc nhưng không gắn lại nhãn đã xoá.
 
 ### Giới hạn cần biết
 
@@ -374,14 +375,15 @@ Chi tiết: [docs/offline-first.md](docs/offline-first.md) và [docs/production-
 | `POST /complete/<id>` | Hoàn thành/huỷ hoàn thành |
 | `POST /delete/<id>` | Xoá công việc |
 | `POST /categories/add` | Tạo phân loại qua form |
+| `POST /categories/delete` | Xoá phân loại qua form; giữ công việc |
 | `GET /health` | Kiểm tra kết nối DB |
 | `GET /metrics` | Metrics của app; bị Nginx chặn từ bên ngoài |
 | `GET /api/tasks` | Công việc và phân loại đã lưu |
 | `GET /api/categories` | Danh sách phân loại |
-| `POST /api/operations` | Thao tác `create`, `update`, `delete`, `category_create` |
+| `POST /api/operations` | Thao tác `create`, `update`, `delete`, `category_create`, `category_delete` |
 | `GET /service-worker.js` | Bộ nhớ trang ngoại tuyến, scope `/` |
 
-API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo nhóm, chưa hỗ trợ sửa tên hoặc xoá phân loại.
+API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo và xoá nhóm, chưa hỗ trợ sửa tên. Xoá nhóm gỡ nhãn khỏi mọi công việc trong cùng giao dịch và lưu bản ghi xoá; khi migration chạy lại, nhóm đã xoá không tự được tạo lại.
 
 ## 12. Minh chứng tuần 1 và tuần 2
 

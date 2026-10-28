@@ -326,3 +326,22 @@ html:has(.ow-app[data-theme=dark]) { color-scheme: dark; }
 .ow-nav-count { flex-shrink: 0; font-size: 12px; }
 @container (min-width: 1041px) { .ow-board.is-upcoming .ow-task-group:not(:first-child) { min-height: 190px; } }
 @media (pointer: coarse) { .ow-category-toggle { width: 44px; height: 44px; } }
+
+/* Category actions stay separate from the navigation/filter button. */
+.ow-category-row { display: flex; align-items: center; gap: 2px; position: relative; }
+.ow-category-row > .ow-nav-item { flex: 1; min-width: 0; }
+.ow-category-menu { position: relative; flex: 0 0 auto; }
+.ow-category-more { display: grid; place-items: center; min-width: 32px; min-height: 36px; border-radius: 5px; list-style: none; cursor: pointer; color: var(--ow-muted); font-size: 22px; }
+.ow-category-more::-webkit-details-marker { display: none; }
+.ow-category-more:hover, .ow-category-menu[open] > summary { color: var(--ow-text); background: var(--ow-selected); }
+.ow-category-more:focus-visible { outline: 2px solid var(--ow-ring); outline-offset: 2px; }
+.ow-category-actions { position: absolute; right: 0; top: calc(100% + 4px); z-index: 12; min-width: 165px; padding: 5px; border: 1px solid var(--ow-border); border-radius: 8px; background: var(--ow-surface); box-shadow: 0 8px 24px #0002; }
+.ow-category-remove { display: block; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 5px; background: transparent; color: var(--ow-red); text-align: left; font: inherit; cursor: pointer; }
+.ow-category-remove:hover, .ow-category-remove:focus-visible { background: var(--ow-red-soft); }
+.ow-native-categories { max-width: 800px; margin: 24px auto; padding: 16px; }
+.ow-native-categories form { display: flex; justify-content: space-between; gap: 12px; padding: 8px; }
+@media (hover: hover) and (pointer: fine) {
+  .ow-category-more { opacity: 0; }
+  .ow-category-row:hover .ow-category-more, .ow-category-row:focus-within .ow-category-more, .ow-category-menu[open] .ow-category-more { opacity: 1; }
+}
+@media (pointer: coarse) { .ow-category-more { min-width: 44px; min-height: 44px; } }

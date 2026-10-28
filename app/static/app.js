@@ -11,7 +11,7 @@ const todayKey = () => dateKey(new Date());
 const monday = value => {const d=parseDay(value);return plusDays(value,-((d.getDay()+6)%7));};
 const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').toLocaleLowerCase('vi');
 const uuid = () => {const b=new Uint8Array(16);global.crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const s=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');return `${s.slice(0,8)}-${s.slice(8,12)}-${s.slice(12,16)}-${s.slice(16,20)}-${s.slice(20)}`;};
-const emptyState = (tasks,categories=DEFAULT_CATEGORIES) => ({schema:1,serverTasks:clone(tasks),categories:clone(categories),queue:[],lastSynced:null,lease:null});
+const emptyState = (tasks,categories=DEFAULT_CATEGORIES) => ({schema:1,serverTasks:clone(tasks),categories:clone(categories),deletedCategories:[],queue:[],lastSynced:null,lease:null});
 function project(snapshot) {
   const map=new Map(snapshot.serverTasks.map(task=>[task.client_id,{...clone(task),pending:false}]));
   for(const op of snapshot.queue) {
@@ -20,12 +20,17 @@ function project(snapshot) {
     else if(op.type==='update'&&old) map.set(op.client_id,{...old,...clone(op.payload),pending:true});
     else if(op.type==='delete') map.delete(op.client_id);
   }
-  return Array.from(map.values());
+  const active=new Set(projectCategories(snapshot).map(c=>c.id));
+  return Array.from(map.values(),task=>({...task,tags:(task.tags||[]).filter(tag=>active.has(tag))}));
 }
 function projectCategories(snapshot){
   const categories=new Map((snapshot.categories||DEFAULT_CATEGORIES).map(c=>[c.id,{...clone(c),pending:false}]));
-  for(const op of snapshot.queue)if(op.type==='category_create')categories.set(op.client_id,{id:op.client_id,...clone(op.payload),pending:true});
-  return Array.from(categories.values());
+  const deleted=new Set(snapshot.deletedCategories||[]);
+  for(const op of snapshot.queue){
+    if(op.type==='category_create'&&!deleted.has(op.client_id))categories.set(op.client_id,{id:op.client_id,...clone(op.payload),pending:true});
+    if(op.type==='category_delete'){deleted.add(op.client_id);categories.delete(op.client_id);}
+  }
+  return Array.from(categories.values()).filter(c=>!deleted.has(c.id));
 }
 function visibleTasks(tasks,view,selectedDate,query,order,today=todayKey(),tag=null) {
   const needle=normalize(query.trim());
@@ -72,13 +77,21 @@ function connectionStatus(state,pending) {
 function acknowledge(snapshot,opId,result) {
   if(!snapshot.queue.some(op=>op.op_id===opId))return;
   snapshot.queue=snapshot.queue.filter(op=>op.op_id!==opId);
+  if(result.category_deleted){
+    const id=result.client_id;
+    snapshot.deletedCategories=Array.from(new Set([...(snapshot.deletedCategories||[]),id]));
+    snapshot.categories=(snapshot.categories||DEFAULT_CATEGORIES).filter(c=>c.id!==id);
+    snapshot.serverTasks.forEach(task=>{task.tags=(task.tags||[]).filter(tag=>tag!==id);});
+    // Keep queued request payloads unchanged: a response may have been lost.
+    return;
+  }
   if(result.category){
     const category=result.category,from=result.client_id,to=category.id;
     snapshot.categories=(snapshot.categories||DEFAULT_CATEGORIES).filter(c=>c.id!==from&&c.id!==to);snapshot.categories.push(clone(category));
     if(from!==to){
       const remap=tags=>Array.from(new Set((tags||[]).map(tag=>tag===from?to:tag)));
       snapshot.serverTasks.forEach(task=>{task.tags=remap(task.tags);});
-      snapshot.queue.forEach(op=>{if(op.payload.tags)op.payload.tags=remap(op.payload.tags);});
+      snapshot.queue.forEach(op=>{if(op.payload.tags)op.payload.tags=remap(op.payload.tags);if(op.type==='category_delete'&&op.client_id===from)op.client_id=to;});
     }
     return;
   }
@@ -127,17 +140,18 @@ function createGateway(){
 /* SERVER TRANSPORT END */
 function createDemoGateway(seed,initialCategories=DEFAULT_CATEGORIES){
   let categories=clone(initialCategories),tasks=clone(seed),online=true,counter=Math.max(0,...seed.map(t=>t.id))+1;
-  const journal=new Map(),deleted=new Set();
+  const journal=new Map(),deleted=new Set(),deletedCategories=new Set();
   const wait=()=>new Promise(resolve=>setTimeout(resolve,140));
   const check=()=>{if(!online)throw new Error('Kết nối mẫu đang tắt.');};
-  return {setOnline:value=>{online=value;},isOnline:()=>online,restore:(seed,cats=DEFAULT_CATEGORIES)=>{categories=clone(cats);tasks=clone(seed);counter=Math.max(0,...tasks.map(t=>t.id))+1;journal.clear();deleted.clear();},
-    probe:async()=>{await wait();check();},read:async()=>{await wait();check();return{tasks:clone(tasks),categories:clone(categories)};},
+  return {setOnline:value=>{online=value;},isOnline:()=>online,restore:(seed,cats=DEFAULT_CATEGORIES)=>{categories=clone(cats);tasks=clone(seed);counter=Math.max(0,...tasks.map(t=>t.id))+1;journal.clear();deleted.clear();deletedCategories.clear();},
+    probe:async()=>{await wait();check();},read:async()=>{await wait();check();return{tasks:clone(tasks),categories:clone(categories),deletedCategories:Array.from(deletedCategories)};},
     push:async op=>{await wait();check();if(journal.has(op.op_id))return clone(journal.get(op.op_id));
       let task=tasks.find(t=>t.client_id===op.client_id);const result={op_id:op.op_id,client_id:op.client_id,deleted:false};
       if(op.type==='category_create'){
         let category=categories.find(c=>categoryNameKey(c.name)===categoryNameKey(op.payload.name));
         if(!category){category={id:op.client_id,...clone(op.payload)};categories.push(category);}
         result.category=clone(category);
+      }else if(op.type==='category_delete'){categories=categories.filter(c=>c.id!==op.client_id);deletedCategories.add(op.client_id);tasks.forEach(t=>{t.tags=(t.tags||[]).filter(tag=>tag!==op.client_id);});result.category_deleted=true;
       }else if(op.type==='delete'){tasks=tasks.filter(t=>t.client_id!==op.client_id);deleted.add(op.client_id);result.deleted=true;}
       else if(deleted.has(op.client_id)){result.deleted=true;}
       else{
@@ -158,7 +172,7 @@ const preview=root.dataset.mode==='preview';
 const bootstrap=JSON.parse(q('#ow-bootstrap').textContent);
 if(preview&&bootstrap.demoBaseDate){const delta=Math.round((parseDay(todayKey())-parseDay(bootstrap.demoBaseDate))/86400000);bootstrap.tasks.forEach(task=>{if(task.due_date)task.due_date=plusDays(task.due_date,delta);});}
 const state={view:'upcoming',tag:null,editKey:null,date:null,week:monday(todayKey()),month:todayKey().slice(0,7),query:'',sort:'newest',health:'unknown',syncing:false,storageError:false,message:'',capability:''};
-let store,snapshot=emptyState(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES),all=project(snapshot),categories=projectCategories(snapshot),categorySignature=null,pendingDelete=null,syncPromise=null,syncTimer=null;
+let store,snapshot=emptyState(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES),all=project(snapshot),categories=projectCategories(snapshot),categorySignature=null,pendingDelete=null,pendingCategoryDelete=null,syncPromise=null,syncTimer=null;
 const owner=uuid();
 const gateway=preview?createDemoGateway(bootstrap.tasks,bootstrap.categories||DEFAULT_CATEGORIES):createGateway();
 const categoryName=id=>categories.find(c=>c.id===id)?.name||'Phân loại';
@@ -252,13 +266,19 @@ function renderCategories(){
     const dot=el('span','ow-category-dot');dot.style.setProperty('--category-color',category.color);dot.setAttribute('aria-hidden','true');
     const label=el('span','ow-category-name',category.name);button.append(dot,label);
     if(category.pending){const pending=el('span','ow-category-pending','↥');pending.setAttribute('aria-label','Chờ đồng bộ');button.append(pending);}
-    const count=el('span','ow-nav-count','0');count.dataset.categoryCount=category.id;button.append(count);list.append(button);
+    const count=el('span','ow-nav-count','0');count.dataset.categoryCount=category.id;button.append(count);
+    const row=el('div','ow-category-row');row.append(button);
+    const menu=el('details','ow-category-menu'),toggle=el('summary','ow-category-more','⋯');
+    toggle.setAttribute('aria-label',`Tuỳ chọn phân loại ${category.name}`);toggle.setAttribute('title',`Tuỳ chọn phân loại ${category.name}`);
+    const panel=el('div','ow-category-actions'),remove=el('button','ow-category-remove','Xoá phân loại');
+    remove.type='button';remove.dataset.categoryDelete=category.id;remove.setAttribute('aria-label',`Xoá phân loại ${category.name}`);
+    panel.append(remove);menu.append(toggle,panel);row.append(menu);list.append(row);
     const option=el('label','ow-tag-option'),input=el('input');input.type='checkbox';input.name='tags';input.value=category.id;input.dataset.tag='';input.checked=selected.has(category.id);
     const optionDot=dot.cloneNode(true);option.append(input,optionDot,el('span','',category.name));options.append(option);
   }
 }
 function render(){
-  all=project(snapshot);categories=projectCategories(snapshot);renderCategories();root.dataset.view=state.view;
+  all=project(snapshot);categories=projectCategories(snapshot);if(state.tag&&!categories.some(c=>c.id===state.tag)){state.tag=null;state.view='all';}renderCategories();root.dataset.view=state.view;
   const visible=visibleTasks(all,state.view,state.date,state.query,state.sort,todayKey(),state.tag);
   const title=state.query?'Tìm kiếm':state.tag?categoryName(state.tag):{all:'Tất cả',today:'Hôm nay',upcoming:'Sắp tới',calendar:'Lịch công việc'}[state.view];
   q('[data-page-title]').textContent=title;q('[data-total]').textContent=String(visible.length);
@@ -304,7 +324,7 @@ async function synchronize(){
       await gateway.probe();
       const renew=async()=>{let ok=false;await store.mutate(s=>{if(s.lease?.owner===owner){s.lease.expires=Date.now()+30000;ok=true;}},false);if(!ok)throw new Error('Phiên khác đang đồng bộ.');};
       await renew();const remote=await gateway.read();if(!Array.isArray(remote.tasks)||!Array.isArray(remote.categories)||remote.tasks.some(t=>typeof t.client_id!=='string'))throw new Error('Dữ liệu máy chủ không tương thích.');
-      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=remote.tasks;s.categories=remote.categories;}}));
+      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=remote.tasks;s.categories=remote.categories;s.deletedCategories=remote.deletedCategories||[];}}));
       for(let i=0;i<100;i++){
         const current=await store.read();const operation=current.queue[0];if(!operation)break;
         await renew();const result=await gateway.push(operation);if(result.op_id!==operation.op_id||result.client_id!==operation.client_id)throw new Error('Phản hồi đồng bộ không hợp lệ.');
@@ -316,7 +336,7 @@ async function synchronize(){
         if(result.notice)announce(result.notice);
       }
       await renew();const final=await gateway.read();if(!Array.isArray(final.tasks)||!Array.isArray(final.categories))throw new Error('Dữ liệu máy chủ không hợp lệ.');
-      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=final.tasks;s.categories=final.categories;if(!s.queue.length)s.lastSynced=new Date().toISOString();}}));
+      adopt(await store.mutate(s=>{if(s.lease?.owner===owner){s.serverTasks=final.tasks;s.categories=final.categories;s.deletedCategories=final.deletedCategories||[];if(!s.queue.length)s.lastSynced=new Date().toISOString();}}));
       state.health='online';state.message='';state.storageError=false;
     }catch(error){
       if(error.permanent){state.message=error.message;state.health='error';}
@@ -373,6 +393,17 @@ async function initialize(){
     }
     button.disabled=false;
   });
+  const categoryDialog=q('[data-category-delete-dialog]');
+  q('[data-category-delete-cancel]').addEventListener('click',()=>categoryDialog.close());
+  categoryDialog.addEventListener('cancel',()=>{pendingCategoryDelete=null;});
+  categoryDialog.addEventListener('close',()=>{const id=pendingCategoryDelete;pendingCategoryDelete=null;(qa('[data-category-delete]').find(b=>b.dataset.categoryDelete===id)?.closest('details')?.querySelector('summary')||q('[data-category-toggle]')).focus();});
+  q('[data-category-delete-confirm]').addEventListener('click',async()=>{
+    if(!pendingCategoryDelete)return;const id=pendingCategoryDelete,button=q('[data-category-delete-confirm]');button.disabled=true;
+    if(await commit('category_delete',id)){
+      if(state.tag===id){state.tag=null;state.view='all';}categoryDialog.close();render();updateComposer();announce('Đã xoá phân loại. Các công việc vẫn được giữ lại.');
+    }
+    button.disabled=false;
+  });
   q('[data-add-form]').addEventListener('submit',async event=>{
     event.preventDefault();const input=q('[data-title]'),title=input.value.trim();
     if(!title||input.value.length>200){q('[data-input-error]').textContent='Nhập tên công việc từ 1 đến 200 ký tự.';q('[data-input-error]').hidden=false;input.setAttribute('aria-invalid','true');input.focus();return;}
@@ -396,6 +427,14 @@ async function initialize(){
     if(target.hasAttribute('data-clear-date')){q('[data-due-date]').value='';q('[data-due-time]').value='';updateComposer();target.closest('details').open=false;}
     if(target.hasAttribute('data-category-cancel')){q('[data-category-create]').open=false;q('[data-category-toggle]').focus();}
     if(target.hasAttribute('data-new-day'))openComposer(target.dataset.newDay);
+    if(target.dataset.categoryDelete){
+      const category=categories.find(c=>c.id===target.dataset.categoryDelete);if(!category)return;
+      pendingCategoryDelete=category.id;target.closest('details').open=false;
+      q('[data-category-delete-preview]').textContent=category.name;
+      const count=all.filter(task=>(task.tags||[]).includes(category.id)).length;
+      q('[data-category-delete-impact]').textContent=count?`${count} công việc sẽ được gỡ nhãn này. Nội dung và các phân loại khác vẫn được giữ lại.`:'Các công việc vẫn được giữ lại, chỉ gỡ nhãn phân loại này.';
+      categoryDialog.returnValue='';categoryDialog.showModal();
+    }
     if(target.dataset.category){state.view='all';state.tag=target.dataset.category;state.query='';q('[data-search]').value='';render();closeMenuOnMobile();publish();}
     if(target.dataset.view){state.tag=null;state.query='';q('[data-search]').value='';state.view=target.dataset.view;state.date=state.view==='calendar'?todayKey():null;if(state.view==='today'||state.view==='calendar'){state.week=monday(todayKey());state.month=todayKey().slice(0,7);}render();closeMenuOnMobile();publish();}
     if(target.dataset.day){selectDay(target.dataset.day);}
@@ -403,6 +442,7 @@ async function initialize(){
     if(target.dataset.monthNav){const anchor=parseDay(state.month+'-01');anchor.setMonth(anchor.getMonth()+Number(target.dataset.monthNav));state.month=dateKey(anchor).slice(0,7);if(state.view==='calendar'){state.date=state.month+'-01';state.week=monday(state.date);}render();publish();}
     if(target.hasAttribute('data-reset-filters'))resetFilters();
   });
+  root.addEventListener('toggle',event=>{if(event.target.matches?.('.ow-category-menu')&&event.target.open)qa('.ow-category-menu').forEach(menu=>{if(menu!==event.target)menu.open=false;});},true);
   root.addEventListener('submit',async event=>{
     const form=event.target;
     if(form.matches('[data-complete-form]')){event.preventDefault();const key=form.closest('[data-task]').dataset.key,task=all.find(t=>t.client_id===key);if(task&&await commit('update',key,{completed:!task.completed})){announce(task.completed?'Đã chuyển về chưa hoàn thành.':'Đã đánh dấu hoàn thành.');q(`[data-key="${key}"] [data-check]`)?.focus();}}
@@ -411,8 +451,8 @@ async function initialize(){
   q('[data-delete-cancel]').addEventListener('click',()=>{pendingDelete=null;q('[data-delete-dialog]').close();});
   q('[data-delete-confirm]').addEventListener('click',async()=>{if(!pendingDelete)return;const key=pendingDelete;const button=q('[data-delete-confirm]');button.disabled=true;if(await commit('delete',key)){if(state.editKey===key){clearComposer();q('[data-composer]').hidden=true;}pendingDelete=null;q('[data-delete-dialog]').close();announce('Đã lưu thao tác xoá trên thiết bị.');q('[data-new-task]').focus();}button.disabled=false;});
   q('[data-delete-dialog]').addEventListener('cancel',()=>{pendingDelete=null;});
-  document.addEventListener('keydown',event=>{if(preview&&event.target!==document.body&&!root.contains(event.target))return;const editing=event.target.closest?.('input,textarea,select,[contenteditable]');if(event.key==='/'&&!editing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!q('[data-delete-dialog]').open&&!settings.open){event.preventDefault();q('[data-sidebar]').open=true;search.focus();}if(event.key==='Escape')qa('[data-command]').forEach(command=>command.open=false);});
-  document.addEventListener('pointerdown',event=>{if(!root.contains(event.target))return;qa('[data-command]').forEach(command=>{if(!command.contains(event.target))command.open=false;});});
+  document.addEventListener('keydown',event=>{if(preview&&event.target!==document.body&&!root.contains(event.target))return;const editing=event.target.closest?.('input,textarea,select,[contenteditable]');if(event.key==='/'&&!editing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!q('[data-delete-dialog]').open&&!categoryDialog.open&&!settings.open){event.preventDefault();q('[data-sidebar]').open=true;search.focus();}if(event.key==='Escape'){qa('[data-command],.ow-category-menu').forEach(command=>command.open=false);}});
+  document.addEventListener('pointerdown',event=>{if(!root.contains(event.target))return;qa('[data-command],.ow-category-menu').forEach(command=>{if(!command.contains(event.target))command.open=false;});});
   qa('[data-command]').forEach(command=>command.addEventListener('toggle',()=>{if(command.open)qa('[data-command]').forEach(other=>{if(other!==command)other.open=false;});}));
   q('[data-sync-now]').addEventListener('click',()=>{state.message='';scheduleSync();});
   if(!preview){
