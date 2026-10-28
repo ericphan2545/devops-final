@@ -143,13 +143,13 @@ Job build kiểm tra Dockerfile; server build lại image khi deploy, chưa dùn
 
 Sau một thay đổi hợp lệ đã vào `main`, đối chiếu ba job xanh, dòng `Deploy OK`, mã phiên bản trên web và dữ liệu đã có trước lần deploy.
 
-Bảng dưới dành cho số liệu lấy từ mục **Total duration** trong GitHub Actions; chưa điền số liệu khi chưa có log tương ứng:
+Bảng dưới ghi số liệu lấy từ mục **Total duration** trong GitHub Actions. Ba lần chạy trên `main` dưới đây đều có test, build và deploy thành công; mỗi lần có ảnh riêng, xác định theo mã commit:
 
 | Lần | Mã commit | Total duration | Link lần chạy/ghi chú |
 | --- | --- | --- | --- |
-| 1 | Điền từ Actions | Điền từ Actions | Bổ sung link minh chứng |
-| 2 | Điền từ Actions | Điền từ Actions | Bổ sung link minh chứng |
-| 3 | Điền từ Actions | Điền từ Actions | Bổ sung link minh chứng |
+| 1 | `6f8fb86` | **1 phút 9 giây** | [Ảnh Actions: test → build → deploy thành công](docs/evidence/week-2/05-main-pipeline-success-69s.png) |
+| 2 | `a1f876e` | **1 phút 9 giây** | [Ảnh Actions: lần chạy #15](docs/evidence/week-2/11-main-pipeline-a1f876e-69s.png) |
+| 3 | `df43fa1` | **1 phút 9 giây** | [Ảnh Actions: lần chạy #17](docs/evidence/week-2/12-main-pipeline-df43fa1-69s.png) |
 
 ### Bước 6 — Demo pipeline chặn lỗi
 
@@ -397,15 +397,99 @@ API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `
 
 Các ảnh/video trên thuộc bản triển khai trước. Chụp bổ sung khi cần chứng minh giao diện bonus hoặc trạng thái server sau bản cập nhật.
 
-### Tuần 2 — Minh chứng cần đính kèm
+### Tuần 2 — Minh chứng thực hiện
 
-- Log pytest trong job `test`, trang Actions có ba job xanh và log `Deploy OK`.
-- Web hiển thị mã commit vừa triển khai; dữ liệu cũ còn sau deploy.
-- Lần demo lỗi: test đỏ, build/deploy skipped, web vẫn mã trước; lần chạy sau revert xanh.
-- Trang GitHub Secrets chỉ hiển thị tên `EC2_HOST`, `EC2_SSH_KEY`.
-- Bảng thời gian ba lần chạy và video push → pipeline → web cập nhật.
+Các ảnh dưới đây ghi lại quá trình kiểm thử, cấu hình Secrets và chạy CI/CD của nhóm tại thời điểm chụp. Ảnh được lưu tại [docs/evidence/week-2](docs/evidence/week-2/); không bao gồm giá trị private key hay GitHub Secrets.
 
-Repo hiện có mã workflow và các script tương ứng; bổ sung link/ảnh/log thực tế vào mục này và bảng ở bước 5 khi nộp checkpoint. Không thay log pipeline bằng ảnh test cục bộ.
+| Nội dung | Kết quả thể hiện trong ảnh |
+| --- | --- |
+| Cấu hình Secrets | Đã khai báo `EC2_HOST` và `EC2_SSH_KEY` |
+| Kiểm thử cục bộ | Bốn test nền tảng đạt, `4 passed in 1.32s`; đây là kết quả cục bộ của bản tại thời điểm chụp |
+| Kiểm tra pull request | PR #12, #13 và #14 có test/build xanh; deploy được bỏ qua đúng điều kiện chỉ deploy khi push `main` |
+| Pipeline trên `main` | Ba commit `6f8fb86`, `a1f876e`, `df43fa1`: test → build → deploy xanh; Total duration mỗi lần **1 phút 9 giây** |
+| Triển khai EC2 | Log có `Deploy OK: phiên bản 6f8fb86` |
+| Demo lỗi và hoàn tác | PR #16: commit lỗi `7eb15fd` làm test đỏ, build bị bỏ qua; commit revert `50734b6` đưa test/build về xanh |
+
+<details>
+<summary>1. GitHub Actions Secrets</summary>
+
+![Hai GitHub Actions Secrets EC2_HOST và EC2_SSH_KEY](docs/evidence/week-2/01-github-actions-secrets.png)
+
+</details>
+
+<details>
+<summary>2. Bốn bài kiểm thử với PostgreSQL trên máy cá nhân</summary>
+
+![Bốn test pytest đạt với PostgreSQL, thời gian 1,32 giây](docs/evidence/week-2/02-pytest-four-passed.png)
+
+Ảnh này minh chứng chạy test cục bộ; không thay thế log pytest trong job `test` của GitHub Actions.
+
+</details>
+
+<details>
+<summary>3. Pull request hợp lệ: test và build thành công</summary>
+
+PR #12 thay đổi nội dung sidebar:
+
+![PR 12 có test và build thành công, deploy bỏ qua](docs/evidence/week-2/04-pr-sidebar-checks-passed.png)
+
+PR #13 cập nhật README:
+
+![PR 13 có test và build thành công, deploy bỏ qua](docs/evidence/week-2/07-pr-readme-checks-passed.png)
+
+PR #14 cập nhật README lần thứ ba:
+
+![PR 14 có test và build thành công, deploy bỏ qua](docs/evidence/week-2/13-pr14-checks-passed.png)
+
+Job deploy trên pull request bị bỏ qua theo cấu hình workflow; chỉ push vào `main` mới triển khai.
+
+</details>
+
+<details>
+<summary>4. Pipeline trên main và triển khai EC2 thành công</summary>
+
+![Pipeline main commit 6f8fb86 có ba job xanh, tổng thời gian 1 phút 9 giây](docs/evidence/week-2/05-main-pipeline-success-69s.png)
+
+![Pipeline main commit a1f876e có ba job xanh, tổng thời gian 1 phút 9 giây](docs/evidence/week-2/11-main-pipeline-a1f876e-69s.png)
+
+![Pipeline main commit df43fa1 có ba job xanh, tổng thời gian 1 phút 9 giây](docs/evidence/week-2/12-main-pipeline-df43fa1-69s.png)
+
+![Log triển khai EC2 báo Deploy OK phiên bản 6f8fb86](docs/evidence/week-2/06-ec2-deploy-log.png)
+
+Log có cảnh báo biến `POSTGRES_DB` chưa được thiết lập trong ngữ cảnh lệnh; cần kiểm tra cấu hình nếu cảnh báo còn xuất hiện ở lần triển khai tiếp theo. Dòng `Deploy OK` là kết quả được ghi trong ảnh, chưa thay thế minh chứng đối chiếu phiên bản và dữ liệu trên web.
+
+</details>
+
+<details>
+<summary>5. Test lỗi chặn build</summary>
+
+![Demo test thất bại, build và deploy bị bỏ qua trên pull request](docs/evidence/week-2/03-test-failure-blocks-build-deploy.png)
+
+</details>
+
+<details>
+<summary>6. Demo làm hỏng health check và revert trên PR 16</summary>
+
+Commit `7eb15fd` làm test thất bại; build bị bỏ qua:
+
+![PR 16 health check lỗi, test đỏ và build bị bỏ qua](docs/evidence/week-2/09-health-test-failure-pr16.png)
+
+Sau commit `50734b6` — `Revert "Demo: break health check"`, test và build thành công trở lại:
+
+![PR 16 sau revert có test và build xanh trở lại](docs/evidence/week-2/10-revert-health-test-passed-pr16.png)
+
+Hai ảnh ghi lại chu kỳ lỗi → revert trên **pull request**. Deploy trên PR vốn bị bỏ qua theo điều kiện workflow; bộ ảnh này chưa chứng minh một lần push `main` lỗi và phiên bản EC2 được giữ nguyên.
+
+</details>
+
+**Minh chứng cần bổ sung để hoàn tất yêu cầu tuần 2:**
+
+- Log pytest bên trong job `test` của GitHub Actions.
+- Web hiển thị mã commit vừa triển khai và dữ liệu cũ còn sau deploy.
+- Kịch bản test lỗi trên `main` giữ nguyên phiên bản server, kèm lần chạy xanh sau revert theo yêu cầu môn học.
+- Video push → pipeline → web cập nhật.
+
+Ảnh log triển khai và ảnh revert được gửi lặp lại chỉ hiển thị một lần, không tính thành các lần chạy khác nhau. Ảnh chụp phần README cũ là tài liệu tham chiếu, không dùng làm minh chứng CI/CD.
 
 ## 13. Xử lý sự cố
 
