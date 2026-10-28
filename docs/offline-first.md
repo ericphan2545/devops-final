@@ -1,5 +1,7 @@
 # Thiết kế ngoại tuyến và đồng bộ
 
+Giao diện hiện tại theo `todo-clean.zip`, chỉ có thêm, tìm kiếm, sắp xếp và xoá. Schema/API metadata và phân loại dưới đây vẫn được giữ để bảo toàn dữ liệu và hàng đợi của bản trước; không còn các nút quản lý phân loại/lịch trên UI.
+
 ## Dữ liệu
 
 PostgreSQL: `todos` giữ ID, UUID ổn định, title, due_date, due_time, priority (0 không đặt, 1 cao, 2 trung bình, 3 thấp), tags, completed, updated_at.
@@ -68,10 +70,10 @@ Migration tạo bảng `todo_categories` và seed ba nhóm cũ bằng `ON CONFLI
 
 ### Xoá phân loại
 
-Menu ⋯ cạnh từng nhóm mở hộp thoại xác nhận, nêu số công việc được gỡ nhãn. Giữ lại hoặc Escape huỷ thao tác. Xác nhận ghi `category_delete` vào IndexedDB trước khi ẩn nhóm, bỏ nhãn khỏi danh sách dự chiếu và chuyển bộ lọc đang xem về Tất cả; không xoá công việc.
+API và hàng đợi cũ tiếp tục nhận `category_delete` để hoàn tất thao tác chưa gửi từ giao diện trước. UI tối giản không tạo mới thao tác loại này. Các thao tác đã lưu vẫn được gửi, bỏ nhãn khỏi danh sách dự chiếu và không xoá công việc.
 
 `category_delete` dùng UUID của nhóm tuỳ chỉnh hoặc một trong ba ID cũ. API ghi nhật ký thao tác, lưu ID vào `todo_category_tombstones`, xoá nhóm và dùng `array_remove` gỡ nhãn khỏi công việc trong cùng giao dịch. Khoá giao dịch chung với tạo nhóm/ghi thẻ công việc ngăn trường hợp ghi đồng thời để lại nhãn mồ côi. Migration không seed lại ID đã có bản ghi xoá. Người dùng có thể tạo lại cùng tên với ID mới.
 
 `GET /api/tasks` bổ sung `deletedCategories`; snapshot schema 1 bổ sung trường này nhưng vẫn đọc được snapshot cũ. Client ẩn nhãn đã xoá khi đọc snapshot/hàng đợi. Payload thao tác công việc đang chờ không bị viết lại khi xoá nhóm, để giữ nguyên dấu vân tay khi gửi lại một yêu cầu đã được server nhận nhưng mất phản hồi. Server bỏ qua nhãn có bản ghi xoá khi xử lý thao tác cũ; nhãn không tồn tại và chưa từng được xoá vẫn bị từ chối. Phản hồi ID chuẩn của nhóm trùng tên cũng ánh xạ lại `category_delete` đang chờ.
 
-Khi tắt JavaScript, form `POST /categories/delete` với `category_id` vẫn xoá nhóm và giữ công việc; không có hộp thoại xác nhận bằng JavaScript trong chế độ này.
+Route `POST /categories/delete` vẫn được giữ ở backend; UI hiện không hiển thị form quản lý phân loại.

@@ -1,6 +1,8 @@
 """Integration tests against real PostgreSQL, isolated in a random test schema."""
 import os
 import uuid
+import json
+import re
 
 import pytest
 from psycopg import sql
@@ -140,7 +142,7 @@ def test_jinja_escapes_titles_and_exposes_native_forms(client):
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
     assert '<script>alert(1)</script>' not in page
     assert 'action="/add" method="post"' in page
-    assert '/delete/' in page and '/complete/' in page
+    assert '/delete/' in page
 
 
 def test_service_worker_has_root_scope_and_version(client):
@@ -197,7 +199,8 @@ def test_custom_category_persists_and_can_be_assigned(client):
     assert data['tasks'][0]['tags'] == [category['id']]
     assert category in data['categories']
     page = client.get('/').get_data(as_text=True)
-    assert category['name'] in page and category['id'] in page
+    bootstrap = json.loads(re.search(r'<script type="application/json" id="clean-bootstrap">(.*?)</script>', page, re.S).group(1))
+    assert category in bootstrap['categories']
 
 
 def test_duplicate_category_name_reuses_canonical_id(client):
@@ -212,7 +215,7 @@ def test_category_form_and_escaped_names(client):
     response = client.post('/categories/add', data={'name': '<b>Công việc</b>', 'color': '#123456'})
     assert response.status_code == 302
     page = client.get('/').get_data(as_text=True)
-    assert '&lt;b&gt;Công việc&lt;/b&gt;' in page
+    assert r'\u003cb\u003e' in page
     assert '<b>Công việc</b>' not in page
 
 
@@ -325,3 +328,24 @@ def test_concurrent_category_delete_and_task_write_leave_no_dangling_tag(client)
     data = client.get('/api/tasks').get_json()
     assert len(data['tasks']) == 4
     assert all('devops' not in task['tags'] for task in data['tasks'])
+
+
+def test_clean_template_keeps_native_forms_and_dict_task_ids(client):
+    created = client.post('/api/operations', json=operation(payload={'title': '<script>việc dài</script>'})).get_json()['task']
+    page = client.get('/').get_data(as_text=True)
+    assert 'class="site-header"' in page
+    assert 'class="ow-sidebar' not in page
+    assert '&lt;script&gt;việc dài&lt;/script&gt;' in page
+    assert f'action="/delete/{created["id"]}"' in page
+    assert 'id="add-form" action="/add" method="post"' in page
+    assert 'id="clean-bootstrap"' in page
+    assert '<script>việc dài</script>' not in page
+
+
+def test_clean_template_does_not_erase_existing_metadata(client):
+    create = operation(payload={'title': 'Việc cũ', 'tags': ['devops'], 'priority': 1, 'completed': True, 'due_date': '2026-11-01'})
+    before = client.post('/api/operations', json=create).get_json()['task']
+    assert client.get('/').status_code == 200
+    client.post('/add', data={'title': 'Việc mới đơn giản'})
+    after = next(t for t in client.get('/api/tasks').get_json()['tasks'] if t['client_id'] == before['client_id'])
+    assert after == before
