@@ -20,7 +20,7 @@ curl.exe --fail http://localhost/health
 curl.exe --fail http://localhost/api/tasks
 ```
 
-Mở `http://localhost/`. Khi vào Cài đặt, nhãn xanh chỉ xuất hiện sau khi máy chủ và DB trả lời thành công, danh sách đã được đọc lại và hàng đợi rỗng. Thêm một việc rồi tải lại trang: việc phải còn trong PostgreSQL.
+Mở `http://localhost/`. Ở cuối danh sách, nhãn xanh chỉ xuất hiện sau khi máy chủ và DB trả lời thành công, danh sách đã được đọc lại và hàng đợi rỗng. Thêm một việc rồi tải lại trang: việc phải còn trong PostgreSQL.
 
 ## Đưa lên EC2
 
@@ -43,12 +43,12 @@ Không dùng link Sites xem thử làm địa chỉ kiểm tra DB của đồ á
 
 ## Kiểm tra lưu và đồng bộ
 
-- Có mạng: thêm/sửa/hoàn thành/xoá; chờ hàng đợi về 0 rồi tải lại để kiểm tra dữ liệu máy chủ.
+- Có mạng: thêm/xoá; chờ trạng thái Đã đồng bộ rồi tải lại để kiểm tra dữ liệu máy chủ.
 - Mở cùng địa chỉ ứng dụng từ trình duyệt khác: dữ liệu đã gửi phải được đọc lại từ PostgreSQL.
 - Tắt mạng khi trang đang mở: thao tác vẫn lưu trong IndexedDB; số thay đổi chờ gửi tăng.
 - Bật mạng: ứng dụng kiểm tra `/health`, gửi hàng đợi và đọc lại dữ liệu. Chỉ sau khi xác nhận thành công mới báo đã đồng bộ.
 - Server trả 401/403/404 hoặc DB không sẵn sàng: hiển thị lỗi hoặc chưa kết nối, giữ thao tác đang chờ. Không báo xanh chỉ vì máy có Internet.
-- `Đồng bộ lần cuối` là ngày và giờ hoàn tất một vòng đồng bộ, không phải giờ bấm nút.
+- Footer hiển thị phiên bản. Thông tin kết nối và số thao tác chờ gửi nằm cuối danh sách; bấm Đồng bộ lại để thử gửi thủ công.
 
 Để tải lại trang khi mất mạng trên EC2, cần HTTPS và một lần tải thành công trước đó. HTTP với IP public vẫn lưu dữ liệu khi trang đang mở, nhưng không bảo đảm mở lại trang ngoại tuyến. Các origin khác nhau (IP/tên miền/giao thức/cổng) có bộ nhớ trình duyệt riêng.
 

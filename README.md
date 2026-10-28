@@ -108,7 +108,7 @@ Bộ test hiện có thêm các trường hợp cho API, migration, phân loại
 
 [scripts/deploy.sh](scripts/deploy.sh) lấy mã commit hiện tại, gán `APP_VERSION`, build/chạy Compose, reload Nginx và kiểm tra `/health` tối đa 20 lần, cách nhau 3 giây. Thành công sẽ in `Deploy OK: phiên bản ...`; thất bại sẽ in log app và trả mã lỗi.
 
-`APP_VERSION` được truyền qua Compose. Trong UI bonus, xem **Cài đặt → Thông tin ứng dụng → Phiên bản**. Nếu chạy Compose mà chưa gán biến này, ứng dụng hiển thị `dev`.
+`APP_VERSION` được truyền qua Compose. Xem mã phiên bản ở **footer → Phiên bản**. Nếu chạy Compose mà chưa gán biến này, ứng dụng hiển thị `dev`.
 
 ### Bước 3 — GitHub Secrets
 
@@ -159,21 +159,18 @@ Minh chứng CI/CD cần được ghi từ GitHub Actions và server thực tế
 
 ## 5. Phần bonus — Giao diện và quản lý công việc
 
-**Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Phần này phát triển thêm trên nền ứng dụng đồ án, được tách khỏi nhiệm vụ bắt buộc tuần 1–2.
+**Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Giao diện hiện tại dùng bố cục trong `todo-clean.zip`: một cột giữa màn hình, nền sáng, màu nhấn xanh, responsive và không dùng thư viện/CDN. Phần này không thay thế nhiệm vụ tuần 1–2.
 
-- Workspace rộng, phủ chiều cao màn hình; responsive, menu thu gọn và giao diện sáng/tối được ghi nhớ.
-- Thêm/sửa công việc tối đa 200 ký tự; đếm ký tự, chặn tên rỗng hoặc toàn khoảng trắng.
-- Lên lịch ngày/giờ, ưu tiên Cao/Trung bình/Thấp, đánh dấu hoàn thành và xác nhận trước khi xoá.
-- Xem Tất cả, Hôm nay, Sắp tới và Lịch; nhóm ngày không lặp công việc, lịch có chấm báo ngày có việc.
-- Tìm kiếm tiếng Việt có/không dấu bằng phím `/`; sắp xếp theo ID, tên, ngày hẹn hoặc ưu tiên.
-- Tiến độ hôm nay nằm trên danh sách, tính từ dữ liệu thực của ngày đó.
-- Nút **+** cạnh PHÂN LOẠI tạo nhóm có tên tối đa 40 ký tự và màu riêng; kiểm tra tên trùng, lưu nhóm vào PostgreSQL. Ba nhóm Cá nhân, DevOps, Học tập được tạo ban đầu; mỗi việc gắn tối đa 10 nhóm.
-- Menu **⋯** cạnh mỗi phân loại có thao tác **Xoá phân loại**, kèm xác nhận và số việc bị gỡ nhãn. Chỉ xoá nhãn, giữ nguyên công việc và các nhãn khác; nhóm đang xem bị xoá sẽ chuyển về Tất cả. Trên desktop, nút hiện khi rê chuột hoặc focus; trên màn hình cảm ứng nút luôn hiển thị.
-- Cài đặt tập trung phần giao diện, kết nối, hàng đợi, đồng bộ thủ công và phiên bản.
-- IndexedDB giữ thao tác ngoại tuyến; khi kết nối phục hồi, gửi hàng đợi và đọc lại dữ liệu từ server. Không báo đã đồng bộ chỉ dựa vào việc máy có Internet.
-- Form thêm/hoàn thành/xoá vẫn gửi POST chuẩn khi JavaScript bị tắt; tìm kiếm tại chỗ, lịch tương tác, modal và offline cần JavaScript.
+- Thêm công việc tối đa 200 ký tự, đếm ký tự và chặn tên rỗng/toàn khoảng trắng.
+- Tìm kiếm tiếng Việt có/không dấu, phím `/`, xoá nhanh từ khoá; sắp xếp cũ nhất, mới nhất hoặc tên A–Z.
+- Danh sách chỉ hiện tên công việc, dấu chấm và nút xoá. Có trạng thái trống/không tìm thấy, xử lý tiêu đề dài và hộp thoại xác nhận xoá.
+- Chuyển sáng/tối, nhớ lựa chọn trên trình duyệt. Footer hiển thị `APP_VERSION`; trạng thái kết nối và nút đồng bộ nằm gọn cuối danh sách.
+- IndexedDB giữ snapshot và hàng đợi thêm/xoá. Vẫn dùng được trên trang đang mở khi mất mạng; tự gửi lại khi kết nối phục hồi và không tạo trùng khi mất phản hồi.
+- Form thêm/xoá vẫn gửi POST chuẩn khi tắt JavaScript và máy chủ có kết nối.
 
-Ứng dụng hiện dùng danh sách chung, chưa có tài khoản riêng, phân quyền theo người dùng hay nhắc việc nền. Bản Flask trong repo gọi API thật và lưu PostgreSQL. Bản Sites dùng để xem thử trước đây là môi trường mô phỏng riêng, không phải địa chỉ triển khai EC2 của nhóm.
+Sidebar, lịch, ưu tiên, tiến độ, phân loại và đánh dấu hoàn thành đã được bỏ khỏi giao diện theo mẫu ZIP. Schema/API và metadata cũ vẫn được giữ để bảo toàn dữ liệu và xử lý các thao tác đang chờ từ bản trước; giao diện mới không tự xoá dữ liệu cũ.
+
+Ứng dụng dùng danh sách chung, chưa có tài khoản riêng. Bản Flask gọi API thật, lưu PostgreSQL. Bản HTML xem thử là bản cục bộ riêng và ghi rõ lưu trên thiết bị, không kết nối EC2.
 
 ## 6. Cấu trúc repository
 
@@ -324,7 +321,7 @@ Linux/macOS/Git Bash:
 DB_HOST=localhost PGPORT=55432 DB_NAME=todo_test DB_USER=todo DB_PASSWORD=testpass python -m pytest -v
 ```
 
-Test tạo schema ngẫu nhiên riêng rồi dọn khi xong. Bộ test của bản UI/phân loại đã được kiểm tra với **36 trường hợp pytest** trên PostgreSQL; đây là kết quả kiểm thử cục bộ, không phải xác nhận trạng thái một lần chạy GitHub Actions.
+Test tạo schema ngẫu nhiên riêng rồi dọn khi xong. Bộ test của bản UI/phân loại đã được kiểm tra với **38 trường hợp pytest** trên PostgreSQL; đây là kết quả kiểm thử cục bộ, không phải xác nhận trạng thái một lần chạy GitHub Actions.
 
 Kiểm thử logic bonus bằng Node.js, không cần cài thư viện frontend:
 
@@ -332,7 +329,7 @@ Kiểm thử logic bonus bằng Node.js, không cần cài thư viện frontend:
 node tests/offline.test.cjs
 ```
 
-Trên UI, kiểm tra thêm: tạo nhóm mới, gắn vào việc, lọc/tìm không dấu, sửa lịch, hoàn thành, huỷ xoá bằng Escape, đổi theme và gửi hàng đợi sau khi mạng phục hồi.
+Trên UI, kiểm tra thêm: tìm không dấu, sắp xếp, tên dài 200 ký tự, huỷ xoá bằng Escape, đổi theme, thêm/xoá ngoại tuyến và gửi hàng đợi sau khi mạng phục hồi.
 
 ## 10. Dữ liệu, migration và đồng bộ
 
@@ -382,6 +379,8 @@ Chi tiết: [docs/offline-first.md](docs/offline-first.md) và [docs/production-
 | `GET /api/categories` | Danh sách phân loại |
 | `POST /api/operations` | Thao tác `create`, `update`, `delete`, `category_create`, `category_delete` |
 | `GET /service-worker.js` | Bộ nhớ trang ngoại tuyến, scope `/` |
+
+Các endpoint hoàn thành, lịch/metadata và phân loại được giữ để tương thích dữ liệu cũ; UI tối giản hiện chỉ dùng thêm, đọc và xoá công việc.
 
 API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo và xoá nhóm, chưa hỗ trợ sửa tên. Xoá nhóm gỡ nhãn khỏi mọi công việc trong cùng giao dịch và lưu bản ghi xoá; khi migration chạy lại, nhóm đã xoá không tự được tạo lại.
 
@@ -509,7 +508,7 @@ Hai ảnh ghi lại chu kỳ lỗi → revert trên **pull request**. Deploy tr�
 | Pull không fast-forward | Xem `git status` trên server và đối chiếu thay đổi trước khi cập nhật; không tự ghi đè code |
 | Script báo `$'\r'` | File `.sh` cần LF; repo có `.gitattributes` cho shell/Python/SQL |
 | Pipeline đỏ ở health | Đọc log deploy/app/DB; container Up chưa bảo đảm ứng dụng kết nối DB được |
-| UI báo chưa đồng bộ | Kiểm tra `/health`, `/api/tasks` và lỗi trong Cài đặt; giữ hàng đợi để gửi lại |
+| UI báo chưa đồng bộ | Kiểm tra `/health`, `/api/tasks` và trạng thái cuối trang; giữ hàng đợi để gửi lại |
 
 ## 14. Nguồn và ghi chú
 
