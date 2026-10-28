@@ -11,12 +11,15 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from flask import Flask, Response, jsonify, redirect, render_template, request
 from prometheus_flask_exporter import PrometheusMetrics
+try:
+    from .categories import all_categories, save_category, validate_category, CategoryConflict
+except ImportError:  # Gunicorn imports app.py as a top-level module inside Docker.
+    from categories import all_categories, save_category, validate_category, CategoryConflict
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 65536
 PrometheusMetrics(app)
 APP_VERSION = os.environ.get("APP_VERSION", "dev")
-TAGS = {"hoc-tap": "HọcTập", "devops": "DevOps", "ca-nhan": "CáNhân"}
 COLUMNS = "id, title, client_id, due_date, due_time, priority, tags, completed, updated_at"
 
 
@@ -73,8 +76,12 @@ def validate(data, partial=False):
         cleaned["priority"] = value
     if "tags" in data:
         value = data["tags"]
-        if not isinstance(value, list) or len(value) > 3 or any(tag not in TAGS for tag in value):
+        if not isinstance(value, list) or len(value) > 10 or any(not isinstance(tag, str) or len(tag) > 64 for tag in value):
             raise ValueError("Thẻ phân loại không hợp lệ.")
+        with get_db() as category_conn:
+            known = {category['id'] for category in all_categories(category_conn)}
+        if any(tag not in known for tag in value):
+            raise ValueError('Phân loại chưa có trên máy chủ. Hãy đồng bộ phân loại trước.')
         cleaned["tags"] = list(dict.fromkeys(value))
     if "completed" in data:
         if not isinstance(data["completed"], bool):
@@ -99,8 +106,11 @@ def form_values():
 def index():
     with get_db() as conn:
         todos = all_tasks(conn)
-    return render_template("index.html", todos=todos, version=APP_VERSION, tag_names=TAGS,
-                           initial_state={"tasks": todos, "version": APP_VERSION})
+        categories = all_categories(conn)
+    return render_template("index.html", todos=todos, version=APP_VERSION, categories=categories,
+                           tag_names={c['id']: c['name'] for c in categories},
+                           category_colors={c['id']: c['color'] for c in categories},
+                           initial_state={"tasks": todos, "categories": categories, "version": APP_VERSION})
 
 
 @app.post("/add")
@@ -139,7 +149,31 @@ def complete(todo_id):
 @app.get("/api/tasks")
 def tasks_api():
     with get_db() as conn:
-        return {"tasks": all_tasks(conn)}
+        return {"tasks": all_tasks(conn), "categories": all_categories(conn)}
+
+
+@app.get("/api/categories")
+def categories_api():
+    with get_db() as conn:
+        return {"categories": all_categories(conn)}
+
+
+@app.post("/categories/add")
+def add_category():
+    try:
+        values = validate_category({'name': request.form.get('name'), 'color': request.form.get('color', '#668dce')})
+    except ValueError as exc:
+        return str(exc), 400
+    with get_db() as conn:
+        save_category(conn, str(uuid.uuid4()), values)
+    return redirect('/')
+
+
+@app.errorhandler(CategoryConflict)
+def category_conflict(exc):
+    if request.path.startswith('/api/'):
+        return {'error': str(exc), 'code': 'category_conflict'}, 409
+    return str(exc), 409
 
 
 @app.post("/api/operations")
@@ -151,9 +185,9 @@ def operation_api():
         op_id = uuid.UUID(raw.get("op_id", ""))
         client_id = uuid.UUID(raw.get("client_id", ""))
         kind = raw.get("type")
-        if kind not in ("create", "update", "delete"):
+        if kind not in ("create", "update", "delete", "category_create"):
             raise ValueError("Loại thao tác không hợp lệ.")
-        values = validate(raw.get("payload", {}), partial=kind != "create")
+        values = validate_category(raw.get("payload", {})) if kind == "category_create" else validate(raw.get("payload", {}), partial=kind != "create")
         if kind == "update" and not values:
             raise ValueError("Không có thay đổi để đồng bộ.")
     except (ValueError, TypeError, AttributeError) as exc:
@@ -168,6 +202,12 @@ def operation_api():
             if previous[0] != fingerprint:
                 return {"error": "Mã thao tác đã được dùng cho dữ liệu khác.", "code": "operation_conflict"}, 409
             return jsonify(previous[1])
+        if kind == 'category_create':
+            category = save_category(conn, str(client_id), values)
+            result = {'op_id': str(op_id), 'client_id': str(client_id), 'category': category}
+            conn.execute('INSERT INTO todo_operations(op_id,request_hash,result) VALUES (%s,%s,%s)',
+                         (op_id, fingerprint, Jsonb(result)))
+            return jsonify(result)
         # Serialize create/update/delete for each stable client UUID.
         conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (str(client_id),))
         tombstone = conn.execute("SELECT 1 FROM todo_tombstones WHERE client_id=%s", (client_id,)).fetchone()

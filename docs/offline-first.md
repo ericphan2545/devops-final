@@ -53,3 +53,14 @@ Thêm, xoá và hoàn thành vẫn dùng POST trên server. Các trường metad
 - Hai thiết bị sửa cùng một trường; xác nhận quy tắc last received wins.
 - Từ chối/xoá bộ nhớ site: không được giả báo dữ liệu vẫn được giữ.
 - Giữ dữ liệu sau migration của volume tuần 1; không chạy down -v.
+
+
+## Phân loại tuỳ chỉnh
+
+Snapshot IndexedDB schema 1 bổ sung `categories`. Snapshot cũ chưa có trường này được điền từ bootstrap khi mở ứng dụng; ba ID `ca-nhan`, `devops`, `hoc-tap` được giữ nguyên.
+
+Hàng đợi nhận loại `category_create` trước các thao tác tạo/sửa công việc sử dụng nhóm đó. `op_id` vẫn được lưu trong nhật ký PostgreSQL cùng giao dịch với phân loại. Gửi lại khi mất phản hồi không tạo thêm dòng.
+
+Server chuẩn hoá tên để nhận diện trùng (không phân biệt dấu, hoa/thường, khoảng trắng thừa), nhưng giữ tên hiển thị đầu tiên. Khi hai thiết bị tạo cùng tên với UUID khác nhau, phản hồi trả ID nhóm đã có. Client đổi ID nhóm trong các thao tác công việc đang chờ rồi mới gửi tiếp. Không gửi dữ liệu mẫu hoặc chỉ lưu tên nhóm trong localStorage.
+
+Migration tạo bảng `todo_categories` và seed ba nhóm cũ bằng `ON CONFLICT DO NOTHING`; không sửa hoặc xoá công việc, không xoá nhóm tuỳ chỉnh khi chạy migration lại.

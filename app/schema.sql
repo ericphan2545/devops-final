@@ -30,3 +30,18 @@ CREATE TABLE IF NOT EXISTS todo_tombstones (
     client_id UUID PRIMARY KEY,
     deleted_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Additive category migration; keep the three original IDs used by existing tasks.
+CREATE TABLE IF NOT EXISTS todo_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 40),
+    name_key TEXT NOT NULL UNIQUE,
+    color TEXT NOT NULL CHECK (color ~ '^#[0-9a-fA-F]{6}$'),
+    sort_order INTEGER NOT NULL DEFAULT 3,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO todo_categories(id,name,name_key,color,sort_order) VALUES
+    ('ca-nhan','Cá nhân','ca nhan','#f36e77',0),
+    ('devops','DevOps','devops','#67c5d3',1),
+    ('hoc-tap','Học tập','hoc tap','#ecc64c',2)
+ON CONFLICT DO NOTHING;

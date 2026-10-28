@@ -31,6 +31,7 @@ def schema():
 def reset(schema):
     with get_db() as conn:
         conn.execute("TRUNCATE todos, todo_operations, todo_tombstones RESTART IDENTITY")
+        conn.execute("DELETE FROM todo_categories WHERE id NOT IN ('ca-nhan','devops','hoc-tap')")
 
 
 @pytest.fixture
@@ -175,3 +176,64 @@ def test_concurrent_replay_creates_only_one_task(client):
         results = list(pool.map(send, range(4)))
     assert all(result == results[0] for result in results)
     assert len(client.get("/api/tasks").get_json()["tasks"]) == 1
+
+
+def category_operation(name='Sức khỏe', color='#668dce'):
+    return operation('category_create', payload={'name': name, 'color': color})
+
+
+def test_custom_category_persists_and_can_be_assigned(client):
+    op = category_operation()
+    response = client.post('/api/operations', json=op)
+    assert response.status_code == 200
+    category = response.get_json()['category']
+    assert category['id'] == op['client_id']
+    assert client.post('/api/operations', json=op).get_json() == response.get_json()
+    assert len(client.get('/api/categories').get_json()['categories']) == 4
+    task = operation(payload={'title': 'Đi bộ', 'tags': [category['id']]})
+    assert client.post('/api/operations', json=task).status_code == 200
+    data = client.get('/api/tasks').get_json()
+    assert data['tasks'][0]['tags'] == [category['id']]
+    assert category in data['categories']
+    page = client.get('/').get_data(as_text=True)
+    assert category['name'] in page and category['id'] in page
+
+
+def test_duplicate_category_name_reuses_canonical_id(client):
+    op = category_operation('  HOC   TAP ', '#123456')
+    response = client.post('/api/operations', json=op)
+    assert response.status_code == 200
+    assert response.get_json()['category']['id'] == 'hoc-tap'
+    assert len(client.get('/api/categories').get_json()['categories']) == 3
+
+
+def test_category_form_and_escaped_names(client):
+    response = client.post('/categories/add', data={'name': '<b>Công việc</b>', 'color': '#123456'})
+    assert response.status_code == 302
+    page = client.get('/').get_data(as_text=True)
+    assert '&lt;b&gt;Công việc&lt;/b&gt;' in page
+    assert '<b>Công việc</b>' not in page
+
+
+@pytest.mark.parametrize('payload', [{'name': ' '}, {'name': 'x' * 41}, {'name': 'A', 'color': 'url(evil)'}, {'name': 'A', 'extra': True}])
+def test_invalid_category_does_not_mutate(client, payload):
+    assert client.post('/api/operations', json=operation('category_create', payload=payload)).status_code == 400
+    assert len(client.get('/api/categories').get_json()['categories']) == 3
+
+
+def test_concurrent_duplicate_categories_create_one_row(client):
+    from concurrent.futures import ThreadPoolExecutor
+    def send(_):
+        with app.test_client() as worker:
+            return worker.post('/api/operations', json=category_operation()).get_json()['category']['id']
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        ids = list(pool.map(send, range(4)))
+    assert len(set(ids)) == 1
+    assert len(client.get('/api/categories').get_json()['categories']) == 4
+
+
+def test_migration_preserves_custom_categories(client):
+    category = client.post('/api/operations', json=category_operation()).get_json()['category']
+    with get_db() as conn:
+        apply_schema(conn)
+    assert category in client.get('/api/categories').get_json()['categories']

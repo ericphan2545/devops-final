@@ -4,9 +4,11 @@ Không gian quản lý công việc với menu bên trái, bảng công việc t
 
 ## Chức năng
 
+Giao diện, phân loại tuỳ chỉnh và offline-first là phần bonus. Các yêu cầu server/Docker/CI-CD của tuần 1–2 được theo dõi riêng.
+
 - Thêm và sửa công việc tối đa 200 ký tự, đếm ký tự realtime, chặn tên chỉ có khoảng trắng.
 - Đặt ngày/giờ thực hiện, chọn nhanh hôm nay/ngày mai/cuối tuần.
-- Ưu tiên Cao/Trung bình/Thấp; thẻ #HọcTập, #DevOps, #CáNhân.
+- Ưu tiên Cao/Trung bình/Thấp; tạo phân loại bằng nút **+** cạnh PHÂN LOẠI, đặt tên tối đa 40 ký tự và chọn màu. Ba nhóm Cá nhân, DevOps, Học tập có sẵn; không còn giới hạn ở ba nhóm. Mỗi công việc gắn tối đa 10 phân loại.
 - Đánh dấu hoàn thành, huỷ hoàn thành; hộp thoại xác nhận trước khi xoá.
 - Tìm kiếm tiếng Việt có/không dấu, phím `/`, xoá nhanh từ khoá.
 - Menu Sắp tới / Hôm nay / Tất cả / Lịch công việc; bộ lọc Cá nhân, DevOps và Học tập dùng các thẻ đã lưu.
@@ -14,7 +16,7 @@ Không gian quản lý công việc với menu bên trái, bảng công việc t
 - Nút Thêm công việc trong từng nhóm điền sẵn ngày; việc chưa có lịch hoặc quá hạn vẫn truy cập được ở Tất cả.
 - Lịch tuần và lịch tháng có chấm báo ngày có việc chưa hoàn thành.
 - Sắp xếp theo ID mới/cũ, tên, ngày hẹn hoặc mức ưu tiên. Việc đã hoàn thành được đưa xuống cuối.
-- Menu bên trái có thể thu gọn. Trên điện thoại, menu mở/đóng theo nhu cầu và các nhóm công việc xếp thành một cột.
+- Giao diện phủ kín chiều cao màn hình, vùng làm việc rộng hơn và cỡ chữ lớn hơn trên desktop. Menu bên trái có thể thu gọn. Trên điện thoại, menu mở/đóng theo nhu cầu và các nhóm công việc xếp thành một cột.
 - Tiến độ hôm nay hiển thị ngay trên danh sách công việc, gồm vòng phần trăm, số việc đã xong và số việc còn lại. Số liệu tính từ toàn bộ công việc được lên lịch cho hôm nay, không phụ thuộc góc nhìn hoặc bộ lọc đang chọn.
 - Cài đặt chứa lựa chọn sáng/tối, trạng thái kết nối, hàng đợi, lần đồng bộ gần nhất, đồng bộ thủ công và thông tin phiên bản. Lựa chọn sáng/tối được nhớ bằng localStorage.
 - IndexedDB lưu danh sách và hàng đợi; tự gửi thay đổi lên Flask khi kết nối sẵn sàng.
@@ -28,9 +30,10 @@ Không gian quản lý công việc với menu bên trái, bảng công việc t
 2. Bấm Thêm việc ở đầu trang hoặc Thêm công việc trong một nhóm. Nhập tên, đặt lịch/ưu tiên/thẻ rồi bấm Thêm. Khi chỉnh sửa, nút chuyển thành Lưu.
 3. Bấm mũi tên trên dòng công việc để sửa; ô bên trái đánh dấu hoàn thành; Xoá mở hộp thoại xác nhận.
 4. Tìm kiếm ở menu bên trái hoặc bấm `/` để tìm toàn bộ danh sách. Chọn một phân loại để lọc bằng thẻ; bộ đếm lấy từ dữ liệu thực.
-5. Mở Cài đặt ở cuối menu để đổi giao diện, xem kết nối/hàng đợi hoặc đồng bộ thủ công. Phím Escape đóng hộp thoại.
+5. Bấm **+** cạnh PHÂN LOẠI để tạo nhóm. Tên trùng (không phân biệt dấu/hoa thường/khoảng trắng thừa) được kiểm tra; nhóm mới xuất hiện ở bộ lọc và ô Gắn thẻ. Khi ngoại tuyến, nhóm và việc thuộc nhóm được giữ trong hàng đợi, gửi phân loại trước rồi gửi công việc.
+6. Mở Cài đặt ở cuối menu để đổi giao diện, xem kết nối/hàng đợi hoặc đồng bộ thủ công. Phím Escape đóng hộp thoại.
 
-Giao diện không có đăng nhập, đăng xuất, danh sách tuỳ tạo hoặc ghi chú dán. Những mục đó trong mẫu tham chiếu không được đưa thành nút chưa hoạt động.
+Giao diện không có đăng nhập, đăng xuất hoặc ghi chú dán. Những mục đó trong mẫu tham chiếu không được đưa thành nút chưa hoạt động.
 
 ## Kiến trúc
 
@@ -53,9 +56,10 @@ Sơ đồ triển khai hiện có thể chưa thể hiện chi tiết mới củ
 1. Khi mở trang, ứng dụng đọc dữ liệu đã lưu trong IndexedDB và hiển thị ngay.
 2. Thêm/sửa/hoàn thành/xoá được ghi vào một giao dịch IndexedDB trước khi giao diện báo đã lưu.
 3. Mỗi thao tác có UUID riêng. Công việc cũng có UUID ổn định; ID PostgreSQL được hiển thị sau khi server nhận việc.
-4. Ứng dụng kiểm tra `/health`, lấy `/api/tasks`, gửi tuần tự hàng đợi qua `/api/operations` rồi lấy lại danh sách.
-5. Chỉ xoá một thao tác khỏi hàng đợi sau khi nhận phản hồi xác nhận. Mất phản hồi thì gửi lại cùng mã; server trả kết quả đã lưu và không thực hiện lần hai.
-6. Khi không kết nối được, dữ liệu trên máy vẫn có thể tìm, lọc, sắp xếp, sửa và xoá. Công việc có thay đổi chờ gửi được đánh dấu `⏳ Chờ đồng bộ`.
+4. Phân loại mới được lưu vào bảng `todo_categories` trên PostgreSQL. Trình duyệt đọc lại danh sách nhóm từ máy chủ khi đồng bộ, nên nhóm không chỉ tồn tại trên một trình duyệt.
+5. Ứng dụng kiểm tra `/health`, lấy `/api/tasks`, gửi tuần tự hàng đợi qua `/api/operations` rồi lấy lại danh sách.
+6. Chỉ xoá một thao tác khỏi hàng đợi sau khi nhận phản hồi xác nhận. Mất phản hồi thì gửi lại cùng mã; server trả kết quả đã lưu và không thực hiện lần hai.
+7. Khi không kết nối được, dữ liệu trên máy vẫn có thể tìm, lọc, sắp xếp, sửa và xoá. Công việc có thay đổi chờ gửi được đánh dấu `⏳ Chờ đồng bộ`.
 
 Trạng thái xanh chỉ xuất hiện khi `/health` và toàn bộ vòng đối chiếu/gửi/đọc lại API thành công, đồng thời hàng đợi rỗng. Lỗi quyền truy cập, API chưa được triển khai hoặc lỗi lưu trên thiết bị không được báo là đã đồng bộ. Kết nối mạng của hệ điều hành không được dùng làm bằng chứng duy nhất.
 
@@ -72,6 +76,7 @@ Bộ nhớ gắn với origin (giao thức, host, cổng) và trình duyệt. Đ
 ```text
 app/
   app.py                    # Form gốc, API và endpoint Service Worker
+  categories.py             # Kiểm tra tên/màu và lưu phân loại
   migrate.py                # Migration bổ sung, giữ dữ liệu hiện có
   schema.sql                # Schema chuẩn
   entrypoint.sh             # Migration trước khi chạy Gunicorn
@@ -133,6 +138,7 @@ Mở `http://localhost`. Khi Service Worker đã chuẩn bị xong bộ nhớ tr
 Bản này thay đổi cả frontend, Flask, Dockerfile và schema; không chỉ thay ba file UI.
 
 - `entrypoint.sh` chạy `migrate.py` trước Gunicorn.
+- Migration thêm bảng `todo_categories`, giữ nguyên ba ID phân loại cũ và mọi công việc đang có. Khi triển khai bản bổ sung phân loại, rebuild app để entrypoint chạy migration; không cần xoá volume.
 - Migration thêm cột lịch/giờ, ưu tiên, thẻ, hoàn thành, UUID và bảng nhật ký thao tác/tombstone.
 - Migration có khoá giao dịch, có thể chạy lại; không drop/truncate bảng hoặc xoá dữ liệu cũ.
 - Các công việc cũ được cấp UUID. `client_id` có default PostgreSQL để writer cũ chỉ ghi title vẫn hoạt động.
@@ -245,7 +251,14 @@ Server không còn dùng lab AWS Academy (lab xoá sạch tài nguyên sau mỗi
 
 Đã có Docker/Compose, script deploy, migration, test backend và test logic ngoại tuyến. `requirements-dev.txt` đã có dependencies.
 
-Workflow `.github/workflows/ci-cd.yml` chưa có trong snapshot gốc và không được thêm trong bản nâng cấp UI này. Secrets và minh chứng pipeline cần hoàn thiện riêng theo yêu cầu tuần 2: test → build → deploy, chặn deploy khi test lỗi, kiểm tra dữ liệu còn sau deploy và đo ba lần chạy.
+Workflow `.github/workflows/ci-cd.yml` đã có từ `main` và được giữ trong lần gộp này:
+
+- Pull request vào `main`: chạy pytest với PostgreSQL 17, sau đó build Docker khi test thành công.
+- Push/merge vào `main`: chạy test → build → deploy qua SSH bằng `EC2_HOST` và `EC2_SSH_KEY`.
+- `scripts/deploy.sh` chạy migration/build, nạp lại Nginx và kiểm tra `/health`.
+- Test Node.js `node tests/offline.test.cjs` hiện chạy riêng; workflow hiện tại mới chạy pytest ở bước test.
+
+Giao diện/phân loại/offline-first là bonus, không thay thế minh chứng CI/CD tuần 2. Kiểm tra dữ liệu còn sau deploy và ghi lại ba lần chạy theo yêu cầu môn học.
 
 ## Thành viên và minh chứng
 
@@ -267,6 +280,15 @@ Các ảnh này thuộc bản trước, không chứng minh tính năng ngoại 
 Nguồn app ban đầu được hỗ trợ bởi AI (Claude); phần giao diện, đồng bộ và tài liệu được hỗ trợ bởi AI (Codex). Nhóm kiểm tra và chịu trách nhiệm với bản nộp.
 
 Nguồn kỹ thuật: [Service Worker và điều kiện HTTPS/localhost](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [IndexedDB và giao dịch dữ liệu](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
+
+
+## Phân loại tuỳ chỉnh
+
+- `GET /api/tasks` trả cả `tasks` và `categories`; `GET /api/categories` đọc riêng các nhóm.
+- `POST /api/operations` nhận thêm loại `category_create`, với `payload` gồm `name` và `color` hex. Giữ nguyên `op_id` khi gửi lại.
+- Form tạo nhóm gửi `POST /categories/add` với `name`, `color`.
+- Server kiểm tra tên/màu, lưu vào PostgreSQL và trả ID chính thức. Hai thiết bị tạo cùng tên được quy về một nhóm; client đổi ID tạm trong các thao tác công việc chưa gửi trước khi tiếp tục đồng bộ.
+- Phiên bản này bổ sung tạo nhóm; chưa có sửa tên hoặc xoá phân loại.
 
 Demo CI/CD: cập nhật tài liệu lần 2.
 
