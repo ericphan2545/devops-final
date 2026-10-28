@@ -30,8 +30,9 @@ def schema():
 @pytest.fixture(autouse=True)
 def reset(schema):
     with get_db() as conn:
-        conn.execute("TRUNCATE todos, todo_operations, todo_tombstones RESTART IDENTITY")
+        conn.execute("TRUNCATE todos, todo_operations, todo_tombstones, todo_category_tombstones RESTART IDENTITY")
         conn.execute("DELETE FROM todo_categories WHERE id NOT IN ('ca-nhan','devops','hoc-tap')")
+        apply_schema(conn)
 
 
 @pytest.fixture
@@ -237,3 +238,90 @@ def test_migration_preserves_custom_categories(client):
     with get_db() as conn:
         apply_schema(conn)
     assert category in client.get('/api/categories').get_json()['categories']
+
+
+def test_category_delete_keeps_tasks_and_other_tags_and_replays(client):
+    cat = client.post('/api/operations', json=category_operation()).get_json()['category']
+    task_op = operation(payload={'title': 'Giữ nguyên việc', 'tags': [cat['id'], 'devops'], 'priority': 1, 'completed': True})
+    original = client.post('/api/operations', json=task_op).get_json()['task']
+    deletion = operation('category_delete', cat['id'], {})
+    first = client.post('/api/operations', json=deletion)
+    assert first.status_code == 200
+    assert first.get_json()['category_deleted'] is True
+    assert client.post('/api/operations', json=deletion).get_json() == first.get_json()
+    data = client.get('/api/tasks').get_json()
+    assert cat['id'] not in [c['id'] for c in data['categories']]
+    assert cat['id'] in data['deletedCategories']
+    assert len(data['tasks']) == 1
+    actual = data['tasks'][0]
+    for field in ('id', 'title', 'priority', 'completed'):
+        assert actual[field] == original[field]
+    assert actual['tags'] == ['devops']
+    assert client.post('/api/operations', json=operation('category_delete', cat['id'], {})).status_code == 200
+    # Lost task response replay must keep its original fingerprint after tag deletion.
+    assert client.post('/api/operations', json=task_op).status_code == 200
+    assert client.get('/api/tasks').get_json()['tasks'][0]['tags'] == ['devops']
+
+
+def test_deleted_default_category_stays_deleted_after_migration(client):
+    assert client.post('/api/operations', json=operation('category_delete', 'devops', {})).status_code == 200
+    with get_db() as conn:
+        apply_schema(conn)
+        apply_schema(conn)
+    assert 'devops' not in [c['id'] for c in client.get('/api/categories').get_json()['categories']]
+    # Same visible name may be created again, with a fresh stable ID.
+    new = client.post('/api/operations', json=category_operation('DevOps')).get_json()['category']
+    assert new['id'] != 'devops'
+
+
+def test_stale_offline_task_tags_do_not_restore_deleted_category(client):
+    client.post('/api/operations', json=operation('category_delete', 'devops', {}))
+    stale = operation(payload={'title': 'Việc từ thiết bị cũ', 'tags': ['devops', 'hoc-tap']})
+    assert client.post('/api/operations', json=stale).get_json()['task']['tags'] == ['hoc-tap']
+    update = operation('update', stale['client_id'], {'tags': ['devops'], 'title': 'Vẫn sửa được'})
+    response = client.post('/api/operations', json=update)
+    assert response.status_code == 200
+    assert response.get_json()['task']['tags'] == []
+    unknown = operation(payload={'title': 'Sai nhóm', 'tags': ['unknown-group']})
+    assert client.post('/api/operations', json=unknown).status_code == 400
+
+
+def test_native_category_delete_preserves_task(client):
+    client.post('/add', data={'title': 'Qua form', 'tags': ['devops']})
+    response = client.post('/categories/delete', data={'category_id': 'devops'})
+    assert response.status_code == 302
+    assert client.get('/api/tasks').get_json()['tasks'][0]['tags'] == []
+    assert client.post('/categories/delete', data={'category_id': 'devops'}).status_code == 302
+    assert client.post('/categories/delete', data={'category_id': ''}).status_code == 400
+
+
+def test_category_create_cannot_resurrect_deleted_id(client):
+    create = category_operation()
+    client.post('/api/operations', json=create)
+    client.post('/api/operations', json=operation('category_delete', create['client_id'], {}))
+    stale = {**create, 'op_id': str(uuid.uuid4())}
+    assert client.post('/api/operations', json=stale).status_code == 409
+    assert create['client_id'] not in [c['id'] for c in client.get('/api/categories').get_json()['categories']]
+
+
+def test_can_delete_all_categories_without_default_reseed(client):
+    for category_id in ('devops', 'ca-nhan', 'hoc-tap'):
+        assert client.post('/api/operations', json=operation('category_delete', category_id, {})).status_code == 200
+    with get_db() as conn:
+        apply_schema(conn)
+    assert client.get('/api/categories').get_json()['categories'] == []
+    assert client.post('/api/operations', json=operation(payload={'title': 'Không phân loại'})).status_code == 200
+
+
+def test_concurrent_category_delete_and_task_write_leave_no_dangling_tag(client):
+    from concurrent.futures import ThreadPoolExecutor
+    def send(op):
+        with app.test_client() as worker:
+            return worker.post('/api/operations', json=op).status_code
+    ops = [operation(payload={'title': f'Việc {n}', 'tags': ['devops']}) for n in range(4)]
+    ops.insert(2, operation('category_delete', 'devops', {}))
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        assert list(pool.map(send, ops)) == [200] * len(ops)
+    data = client.get('/api/tasks').get_json()
+    assert len(data['tasks']) == 4
+    assert all('devops' not in task['tags'] for task in data['tasks'])

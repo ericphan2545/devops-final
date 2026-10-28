@@ -64,3 +64,14 @@ Hàng đợi nhận loại `category_create` trước các thao tác tạo/sửa
 Server chuẩn hoá tên để nhận diện trùng (không phân biệt dấu, hoa/thường, khoảng trắng thừa), nhưng giữ tên hiển thị đầu tiên. Khi hai thiết bị tạo cùng tên với UUID khác nhau, phản hồi trả ID nhóm đã có. Client đổi ID nhóm trong các thao tác công việc đang chờ rồi mới gửi tiếp. Không gửi dữ liệu mẫu hoặc chỉ lưu tên nhóm trong localStorage.
 
 Migration tạo bảng `todo_categories` và seed ba nhóm cũ bằng `ON CONFLICT DO NOTHING`; không sửa hoặc xoá công việc, không xoá nhóm tuỳ chỉnh khi chạy migration lại.
+
+
+### Xoá phân loại
+
+Menu ⋯ cạnh từng nhóm mở hộp thoại xác nhận, nêu số công việc được gỡ nhãn. Giữ lại hoặc Escape huỷ thao tác. Xác nhận ghi `category_delete` vào IndexedDB trước khi ẩn nhóm, bỏ nhãn khỏi danh sách dự chiếu và chuyển bộ lọc đang xem về Tất cả; không xoá công việc.
+
+`category_delete` dùng UUID của nhóm tuỳ chỉnh hoặc một trong ba ID cũ. API ghi nhật ký thao tác, lưu ID vào `todo_category_tombstones`, xoá nhóm và dùng `array_remove` gỡ nhãn khỏi công việc trong cùng giao dịch. Khoá giao dịch chung với tạo nhóm/ghi thẻ công việc ngăn trường hợp ghi đồng thời để lại nhãn mồ côi. Migration không seed lại ID đã có bản ghi xoá. Người dùng có thể tạo lại cùng tên với ID mới.
+
+`GET /api/tasks` bổ sung `deletedCategories`; snapshot schema 1 bổ sung trường này nhưng vẫn đọc được snapshot cũ. Client ẩn nhãn đã xoá khi đọc snapshot/hàng đợi. Payload thao tác công việc đang chờ không bị viết lại khi xoá nhóm, để giữ nguyên dấu vân tay khi gửi lại một yêu cầu đã được server nhận nhưng mất phản hồi. Server bỏ qua nhãn có bản ghi xoá khi xử lý thao tác cũ; nhãn không tồn tại và chưa từng được xoá vẫn bị từ chối. Phản hồi ID chuẩn của nhóm trùng tên cũng ánh xạ lại `category_delete` đang chờ.
+
+Khi tắt JavaScript, form `POST /categories/delete` với `category_id` vẫn xoá nhóm và giữ công việc; không có hộp thoại xác nhận bằng JavaScript trong chế độ này.

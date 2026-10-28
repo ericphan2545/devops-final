@@ -53,3 +53,23 @@ assert.equal(projectCategories({queue:[]}).length,3,'old snapshots retain legacy
  const stale=await api.push({...op,op_id:'stale'});assert.equal(stale.deleted,true);assert.equal((await api.read()).tasks.length,1);
  console.log('PASS: offline projection, metadata, completion, deletion, Vietnamese search, calendar boundaries, date views, duplicate ack guard, replay-safe create, tombstone.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+// Deleting a category projects immediately without deleting tasks or rewriting requests.
+const removeState=emptyState([task]);
+removeState.queue.push({op_id:'edit-before-delete',type:'update',client_id:task.client_id,payload:{tags:['devops','hoc-tap']}});
+removeState.queue.push({op_id:'remove-category',type:'category_delete',client_id:'devops',payload:{}});
+assert.equal(projectCategories(removeState).some(c=>c.id==='devops'),false);
+assert.equal(project(removeState).length,1);
+assert.deepEqual(project(removeState)[0].tags,['hoc-tap']);
+acknowledge(removeState,'remove-category',{client_id:'devops',category_deleted:true});
+assert.deepEqual(removeState.queue[0].payload.tags,['devops','hoc-tap'],'preserve request fingerprint for lost-response replay');
+assert.deepEqual(project(removeState)[0].tags,['hoc-tap']);
+assert.equal(projectCategories(removeState).length,2);
+const aliasState=emptyState([]);
+aliasState.queue.push({op_id:'new-cat',type:'category_create',client_id:'temporary',payload:{name:'DevOps',color:'#123456'}});
+aliasState.queue.push({op_id:'remove-alias',type:'category_delete',client_id:'temporary',payload:{}});
+acknowledge(aliasState,'new-cat',{client_id:'temporary',category:DEFAULT_CATEGORIES[1]});
+assert.equal(aliasState.queue[0].client_id,'devops','canonical duplicate ID remaps a queued category deletion');
+assert.equal(projectCategories(aliasState).some(c=>c.id==='devops'),false);
+assert.deepEqual(projectCategories({...emptyState([]),categories:[]}),[],'empty category list must not restore defaults');
+console.log('PASS: category deletion keeps tasks/other tags, canonical alias deletion, empty categories and lost-response payloads.');

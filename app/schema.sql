@@ -40,8 +40,15 @@ CREATE TABLE IF NOT EXISTS todo_categories (
     sort_order INTEGER NOT NULL DEFAULT 3,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-INSERT INTO todo_categories(id,name,name_key,color,sort_order) VALUES
+CREATE TABLE IF NOT EXISTS todo_category_tombstones (
+    id TEXT PRIMARY KEY,
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO todo_categories(id,name,name_key,color,sort_order)
+SELECT seed.* FROM (VALUES
     ('ca-nhan','Cá nhân','ca nhan','#f36e77',0),
     ('devops','DevOps','devops','#67c5d3',1),
     ('hoc-tap','Học tập','hoc tap','#ecc64c',2)
+) AS seed(id,name,name_key,color,sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM todo_category_tombstones WHERE id=seed.id)
 ON CONFLICT DO NOTHING;
