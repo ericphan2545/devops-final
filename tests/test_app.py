@@ -1,37 +1,121 @@
 """Integration tests against real PostgreSQL, isolated in a random test schema."""
-import os
-import uuid
 import json
+import os
+from pathlib import Path
 import re
+import shutil
+import subprocess
+import uuid
 
-import pytest
+import psycopg
 from psycopg import sql
+import pytest
+import app.app as app_module
 from app.app import app, get_db
 from app.migrate import apply_schema
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ADMIN_USER = os.environ.get("ADMIN_DB_USER") or os.environ.get("POSTGRES_USER") or os.environ["DB_USER"]
+ADMIN_PASSWORD = os.environ.get("ADMIN_DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD") or os.environ["DB_PASSWORD"]
+
+
+def get_admin_db():
+    return psycopg.connect(host=os.environ["DB_HOST"], dbname=os.environ["DB_NAME"],
+                           user=ADMIN_USER, password=ADMIN_PASSWORD,
+                           connect_timeout=3)
+
+
+def _grant_app_user_for_schema(schema_name, app_user, app_password):
+    script_path = REPO_ROOT / "db" / "app-user.sh"
+    if shutil.which("sh") and shutil.which("psql"):
+        env = {
+            **os.environ,
+            "POSTGRES_USER": ADMIN_USER,
+            "POSTGRES_PASSWORD": ADMIN_PASSWORD,
+            "POSTGRES_DB": os.environ["DB_NAME"],
+            "PGHOST": os.environ["DB_HOST"],
+            "APP_DB_USER": app_user,
+            "APP_DB_PASSWORD": app_password,
+            "APP_DB_SCHEMA": schema_name,
+        }
+        subprocess.run(["sh", str(script_path)], env=env, check=True)
+        return
+
+    db_name = os.environ["DB_NAME"]
+    with get_admin_db() as conn:
+        exists = conn.execute("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = %s", (app_user,)).fetchone()
+        verb = "ALTER ROLE" if exists else "CREATE ROLE"
+        conn.execute(
+            sql.SQL(
+                f"{verb} {{}} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+                "NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD {}"
+            ).format(sql.Identifier(app_user), sql.Literal(app_password))
+        )
+        conn.execute(sql.SQL("REVOKE ALL ON DATABASE {} FROM PUBLIC").format(sql.Identifier(db_name)))
+        conn.execute(sql.SQL("REVOKE ALL ON DATABASE {} FROM {}").format(sql.Identifier(db_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(sql.Identifier(db_name), sql.Identifier(app_user)))
+        conn.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
+        conn.execute(sql.SQL("REVOKE CREATE ON SCHEMA {} FROM PUBLIC").format(sql.Identifier(schema_name)))
+        conn.execute(sql.SQL("REVOKE ALL ON SCHEMA {} FROM {}").format(sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA {} FROM PUBLIC, {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {} FROM PUBLIC, {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {}.todos TO {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT USAGE ON SEQUENCE {}.todos_id_seq TO {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE {}.todo_operations TO {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE {}.todo_tombstones TO {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT SELECT, INSERT, DELETE ON TABLE {}.todo_categories TO {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
+        conn.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE {}.todo_category_tombstones TO {}").format(
+            sql.Identifier(schema_name), sql.Identifier(app_user)))
 
 
 @pytest.fixture(scope="session", autouse=True)
 def schema():
     name = "test_todo_" + uuid.uuid4().hex
-    original = os.environ.get("PGOPTIONS")
-    with get_db() as conn:
+    temp_role = "test_app_" + uuid.uuid4().hex[:12]
+    temp_password = "pw_" + uuid.uuid4().hex
+    original_pgoptions = os.environ.get("PGOPTIONS")
+    original_db_user = os.environ.get("DB_USER")
+    original_db_password = os.environ.get("DB_PASSWORD")
+
+    with get_admin_db() as conn:
         conn.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(name)))
+        conn.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
     os.environ["PGOPTIONS"] = f"-c search_path={name},public"
-    with get_db() as conn:
+    with get_admin_db() as conn:
         apply_schema(conn)
+
+    _grant_app_user_for_schema(name, temp_role, temp_password)
+    os.environ["DB_USER"] = temp_role
+    os.environ["DB_PASSWORD"] = temp_password
+
     yield
-    with get_db() as conn:
+    with get_admin_db() as conn:
         conn.execute("SET search_path TO public")
         conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(name)))
-    if original is None:
+        conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(temp_role)))
+        conn.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(temp_role)))
+
+    if original_pgoptions is None:
         os.environ.pop("PGOPTIONS", None)
     else:
-        os.environ["PGOPTIONS"] = original
+        os.environ["PGOPTIONS"] = original_pgoptions
+    if original_db_user is not None:
+        os.environ["DB_USER"] = original_db_user
+    if original_db_password is not None:
+        os.environ["DB_PASSWORD"] = original_db_password
 
 
 @pytest.fixture(autouse=True)
 def reset(schema):
-    with get_db() as conn:
+    with get_admin_db() as conn:
         conn.execute("TRUNCATE todos, todo_operations, todo_tombstones, todo_category_tombstones RESTART IDENTITY")
         conn.execute("DELETE FROM todo_categories WHERE id NOT IN ('ca-nhan','devops','hoc-tap')")
         apply_schema(conn)
@@ -49,8 +133,108 @@ def operation(kind="create", client_id=None, payload=None):
             "payload": payload if payload is not None else {"title": "Công việc kiểm thử"}}
 
 
+def _metric_value(metrics_body, metric_name):
+    match = re.search(rf"^{re.escape(metric_name)}\s+([-+]?[0-9]*\.?[0-9]+)$", metrics_body, re.M)
+    assert match is not None, f"Metric {metric_name} not found in /metrics output"
+    return float(match.group(1))
+
+
 def test_health_ok(client):
-    assert client.get("/health").get_json() == {"status": "ok"}
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "ok"}
+    assert response.headers["Cache-Control"] == "no-store"
+
+
+def test_metrics_exposes_db_up_and_http_counter(client):
+    assert client.get("/health").status_code == 200
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert _metric_value(body, "todo_db_up") == 1.0
+    assert "flask_http_request_total" in body
+
+
+def test_metrics_and_health_report_failure_when_db_down(client, monkeypatch):
+    def broken_db():
+        raise psycopg.OperationalError("simulated database connection failure")
+
+    monkeypatch.setattr(app_module, "get_db", broken_db)
+
+    health_resp = client.get("/health")
+    assert health_resp.status_code == 500
+    assert health_resp.get_json() == {"status": "error", "detail": "cannot connect to database"}
+    assert health_resp.headers["Cache-Control"] == "no-store"
+
+    metrics_resp = client.get("/metrics")
+    assert metrics_resp.status_code == 200
+    assert _metric_value(metrics_resp.get_data(as_text=True), "todo_db_up") == 0.0
+
+
+def test_app_runs_with_least_privilege_db_user(client):
+    with get_db() as conn:
+        role_row = conn.execute(
+            """SELECT current_user, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
+               FROM pg_catalog.pg_roles WHERE rolname = current_user"""
+        ).fetchone()
+        assert role_row[0] == os.environ["DB_USER"]
+        assert role_row[0] != ADMIN_USER
+        assert role_row[1:] == (False, False, False, False, False)
+
+        priv_row = conn.execute(
+            """SELECT has_database_privilege(current_user, current_database(), 'CONNECT'),
+                      has_database_privilege(current_user, current_database(), 'CREATE'),
+                      has_schema_privilege(current_user, current_schema(), 'USAGE'),
+                      has_schema_privilege(current_user, current_schema(), 'CREATE'),
+                      has_schema_privilege(current_user, 'public', 'CREATE')"""
+        ).fetchone()
+        assert priv_row == (True, False, True, False, False)
+
+        owned = conn.execute(
+            """SELECT count(*) FROM pg_catalog.pg_class c
+               JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+               JOIN pg_catalog.pg_roles r ON r.oid = c.relowner
+               WHERE n.nspname = current_schema() AND r.rolname = current_user"""
+        ).fetchone()[0]
+        assert owned == 0
+
+        for forbidden_sql in (
+            "CREATE TABLE forbidden_check (id INT)",
+            "ALTER TABLE todos ADD COLUMN forbidden_col INT",
+            "DROP TABLE todos",
+            "TRUNCATE todos",
+            "DELETE FROM todo_operations",
+            "DELETE FROM todo_tombstones",
+        ):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                with conn.transaction():
+                    conn.execute(forbidden_sql)
+
+    created = client.post("/api/operations", json=operation(payload={"title": "Quyền hẹp OK"}))
+    assert created.status_code == 200
+
+
+def test_week3_monitoring_and_entrypoint_files():
+    entrypoint = (REPO_ROOT / "app" / "entrypoint.sh").read_text(encoding="utf-8")
+    assert "migrate.py" not in entrypoint
+    assert "exec gunicorn" in entrypoint
+    assert "--workers 1" in entrypoint
+
+    todo_dashboard = json.loads((REPO_ROOT / "monitoring" / "grafana" / "dashboards" / "todo-app.json").read_text(encoding="utf-8"))
+    queries = {}
+    for panel in todo_dashboard["panels"]:
+        assert panel["datasource"]["uid"] == "prometheus"
+        queries[panel["title"]] = panel["targets"][0]
+
+    assert queries["App"]["expr"] == 'up{job="app"}'
+    assert queries["App"]["instant"] is True
+    assert queries["Database"]["expr"] == 'todo_db_up{job="app"}'
+    assert queries["Database"]["instant"] is True
+    assert queries["Request/giây"]["expr"] == 'sum(rate(flask_http_request_total{job="app"}[1m]))'
+
+    host_dashboard = json.loads((REPO_ROOT / "monitoring" / "grafana" / "dashboards" / "server-host.json").read_text(encoding="utf-8"))
+    assert len(host_dashboard["panels"]) >= 4
+    assert all(panel["datasource"]["uid"] == "prometheus" for panel in host_dashboard["panels"])
 
 
 def test_add_then_read_back(client):
@@ -155,7 +339,7 @@ def test_service_worker_has_root_scope_and_version(client):
 
 def test_additive_migration_preserves_legacy_rows():
     name = "test_legacy_" + uuid.uuid4().hex
-    with get_db() as conn:
+    with get_admin_db() as conn:
         conn.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(name)))
         conn.execute(sql.SQL("SET LOCAL search_path TO {}").format(sql.Identifier(name)))
         conn.execute("CREATE TABLE todos(id SERIAL PRIMARY KEY,title TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT now())")
@@ -238,7 +422,7 @@ def test_concurrent_duplicate_categories_create_one_row(client):
 
 def test_migration_preserves_custom_categories(client):
     category = client.post('/api/operations', json=category_operation()).get_json()['category']
-    with get_db() as conn:
+    with get_admin_db() as conn:
         apply_schema(conn)
     assert category in client.get('/api/categories').get_json()['categories']
 
@@ -268,7 +452,7 @@ def test_category_delete_keeps_tasks_and_other_tags_and_replays(client):
 
 def test_deleted_default_category_stays_deleted_after_migration(client):
     assert client.post('/api/operations', json=operation('category_delete', 'devops', {})).status_code == 200
-    with get_db() as conn:
+    with get_admin_db() as conn:
         apply_schema(conn)
         apply_schema(conn)
     assert 'devops' not in [c['id'] for c in client.get('/api/categories').get_json()['categories']]
@@ -310,7 +494,7 @@ def test_category_create_cannot_resurrect_deleted_id(client):
 def test_can_delete_all_categories_without_default_reseed(client):
     for category_id in ('devops', 'ca-nhan', 'hoc-tap'):
         assert client.post('/api/operations', json=operation('category_delete', category_id, {})).status_code == 200
-    with get_db() as conn:
+    with get_admin_db() as conn:
         apply_schema(conn)
     assert client.get('/api/categories').get_json()['categories'] == []
     assert client.post('/api/operations', json=operation(payload={'title': 'Không phân loại'})).status_code == 200

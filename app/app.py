@@ -10,6 +10,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from flask import Flask, Response, jsonify, redirect, render_template, request
+from prometheus_client import Gauge
 from prometheus_flask_exporter import PrometheusMetrics
 try:
     from .categories import all_categories, save_category, validate_category, CategoryConflict, delete_category, deleted_category_ids, filter_category_tags
@@ -27,6 +28,19 @@ def get_db():
     return psycopg.connect(host=os.environ["DB_HOST"], dbname=os.environ["DB_NAME"],
                           user=os.environ["DB_USER"], password=os.environ["DB_PASSWORD"],
                           connect_timeout=3)
+
+
+def db_ok():
+    try:
+        with get_db() as conn:
+            conn.execute("SELECT 1")
+        return 1
+    except psycopg.Error:
+        return 0
+
+
+DB_UP_GAUGE = Gauge("todo_db_up", "Database connectivity status (1 = up, 0 = down)")
+DB_UP_GAUGE.set_function(db_ok)
 
 
 def serialize(row):
@@ -278,12 +292,9 @@ def operation_api():
 
 @app.get("/health")
 def health():
-    try:
-        with get_db() as conn:
-            conn.execute("SELECT 1")
+    if db_ok():
         return {"status": "ok"}
-    except psycopg.Error:
-        return {"status": "error", "detail": "cannot connect to database"}, 500
+    return {"status": "error", "detail": "cannot connect to database"}, 500
 
 
 @app.get("/service-worker.js")
