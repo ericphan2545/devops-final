@@ -1,3 +1,7 @@
+# Provision tự động các dashboard JSON từ thư mục /etc/grafana/dashboards (mount read-only từ Git).
+# Lưu ý: Mọi chỉnh sửa trực tiếp trên giao diện web Grafana chỉ nằm tạm trong database nội bộ
+# của container Grafana, KHÔNG tự ghi ngược về repository Git và có thể bị ghi đè khi nạp lại file.
+# Muốn lưu thay đổi lâu dài vào project, hãy Export JSON và commit vào monitoring/grafana/dashboards/.
 apiVersion: 1
 
 providers:
@@ -11,4 +15,3 @@ providers:
     options:
       path: /etc/grafana/dashboards
       foldersFromFilesStructure: false
-

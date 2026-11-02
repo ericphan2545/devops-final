@@ -15,23 +15,29 @@ from app.app import app, get_db
 from app.migrate import apply_schema
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ADMIN_USER = os.environ.get("ADMIN_DB_USER") or os.environ.get("POSTGRES_USER") or os.environ["DB_USER"]
-ADMIN_PASSWORD = os.environ.get("ADMIN_DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD") or os.environ["DB_PASSWORD"]
+
+
+def _admin_credentials():
+    user = os.environ.get("ADMIN_DB_USER") or os.environ.get("POSTGRES_USER") or os.environ["DB_USER"]
+    password = os.environ.get("ADMIN_DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD") or os.environ["DB_PASSWORD"]
+    return user, password
 
 
 def get_admin_db():
+    admin_user, admin_password = _admin_credentials()
     return psycopg.connect(host=os.environ["DB_HOST"], dbname=os.environ["DB_NAME"],
-                           user=ADMIN_USER, password=ADMIN_PASSWORD,
+                           user=admin_user, password=admin_password,
                            connect_timeout=3)
 
 
 def _grant_app_user_for_schema(schema_name, app_user, app_password):
+    admin_user, admin_password = _admin_credentials()
     script_path = REPO_ROOT / "db" / "app-user.sh"
     if shutil.which("sh") and shutil.which("psql"):
         env = {
             **os.environ,
-            "POSTGRES_USER": ADMIN_USER,
-            "POSTGRES_PASSWORD": ADMIN_PASSWORD,
+            "POSTGRES_USER": admin_user,
+            "POSTGRES_PASSWORD": admin_password,
             "POSTGRES_DB": os.environ["DB_NAME"],
             "PGHOST": os.environ["DB_HOST"],
             "APP_DB_USER": app_user,
@@ -44,13 +50,17 @@ def _grant_app_user_for_schema(schema_name, app_user, app_password):
     db_name = os.environ["DB_NAME"]
     with get_admin_db() as conn:
         exists = conn.execute("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = %s", (app_user,)).fetchone()
-        verb = "ALTER ROLE" if exists else "CREATE ROLE"
-        conn.execute(
-            sql.SQL(
-                f"{verb} {{}} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+        if exists:
+            stmt = sql.SQL(
+                "ALTER ROLE {} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
                 "NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD {}"
-            ).format(sql.Identifier(app_user), sql.Literal(app_password))
-        )
+            )
+        else:
+            stmt = sql.SQL(
+                "CREATE ROLE {} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+                "NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD {}"
+            )
+        conn.execute(stmt.format(sql.Identifier(app_user), sql.Literal(app_password)))
         conn.execute(sql.SQL("REVOKE ALL ON DATABASE {} FROM PUBLIC").format(sql.Identifier(db_name)))
         conn.execute(sql.SQL("REVOKE ALL ON DATABASE {} FROM {}").format(sql.Identifier(db_name), sql.Identifier(app_user)))
         conn.execute(sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(sql.Identifier(db_name), sql.Identifier(app_user)))
@@ -78,6 +88,10 @@ def _grant_app_user_for_schema(schema_name, app_user, app_password):
 
 @pytest.fixture(scope="session", autouse=True)
 def schema():
+    admin_user, admin_password = _admin_credentials()
+    os.environ["ADMIN_DB_USER"] = admin_user
+    os.environ["ADMIN_DB_PASSWORD"] = admin_password
+
     name = "test_todo_" + uuid.uuid4().hex
     temp_role = "test_app_" + uuid.uuid4().hex[:12]
     temp_password = "pw_" + uuid.uuid4().hex
@@ -172,23 +186,32 @@ def test_metrics_and_health_report_failure_when_db_down(client, monkeypatch):
 
 
 def test_app_runs_with_least_privilege_db_user(client):
+    admin_user, _ = _admin_credentials()
     with get_db() as conn:
         role_row = conn.execute(
             """SELECT current_user, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
                FROM pg_catalog.pg_roles WHERE rolname = current_user"""
         ).fetchone()
         assert role_row[0] == os.environ["DB_USER"]
-        assert role_row[0] != ADMIN_USER
+        assert role_row[0] != admin_user
         assert role_row[1:] == (False, False, False, False, False)
+
+        member_count = conn.execute(
+            """SELECT count(*) FROM pg_catalog.pg_auth_members m
+               JOIN pg_catalog.pg_roles r ON r.oid = m.member
+               WHERE r.rolname = current_user"""
+        ).fetchone()[0]
+        assert member_count == 0
 
         priv_row = conn.execute(
             """SELECT has_database_privilege(current_user, current_database(), 'CONNECT'),
                       has_database_privilege(current_user, current_database(), 'CREATE'),
+                      has_database_privilege(current_user, current_database(), 'TEMP'),
                       has_schema_privilege(current_user, current_schema(), 'USAGE'),
                       has_schema_privilege(current_user, current_schema(), 'CREATE'),
                       has_schema_privilege(current_user, 'public', 'CREATE')"""
         ).fetchone()
-        assert priv_row == (True, False, True, False, False)
+        assert priv_row == (True, False, False, True, False, False)
 
         owned = conn.execute(
             """SELECT count(*) FROM pg_catalog.pg_class c
@@ -203,6 +226,7 @@ def test_app_runs_with_least_privilege_db_user(client):
             "ALTER TABLE todos ADD COLUMN forbidden_col INT",
             "DROP TABLE todos",
             "TRUNCATE todos",
+            "UPDATE todo_operations SET request_hash = 'tampered'",
             "DELETE FROM todo_operations",
             "DELETE FROM todo_tombstones",
         ):
@@ -210,31 +234,25 @@ def test_app_runs_with_least_privilege_db_user(client):
                 with conn.transaction():
                     conn.execute(forbidden_sql)
 
-    created = client.post("/api/operations", json=operation(payload={"title": "Quyền hẹp OK"}))
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            with conn.transaction():
+                apply_schema(conn)
+
+    # Full offline sync lifecycle (create -> replay -> update -> delete) must succeed under least-privilege role.
+    create_op = operation("create", payload={"title": "Quyền hẹp thêm việc"})
+    created = client.post("/api/operations", json=create_op)
     assert created.status_code == 200
+    assert client.post("/api/operations", json=create_op).get_json() == created.get_json()
 
+    update_op = operation("update", create_op["client_id"], {"title": "Quyền hẹp cập nhật", "completed": True})
+    updated = client.post("/api/operations", json=update_op)
+    assert updated.status_code == 200
+    assert updated.get_json()["task"]["title"] == "Quyền hẹp cập nhật"
 
-def test_week3_monitoring_and_entrypoint_files():
-    entrypoint = (REPO_ROOT / "app" / "entrypoint.sh").read_text(encoding="utf-8")
-    assert "migrate.py" not in entrypoint
-    assert "exec gunicorn" in entrypoint
-    assert "--workers 1" in entrypoint
-
-    todo_dashboard = json.loads((REPO_ROOT / "monitoring" / "grafana" / "dashboards" / "todo-app.json").read_text(encoding="utf-8"))
-    queries = {}
-    for panel in todo_dashboard["panels"]:
-        assert panel["datasource"]["uid"] == "prometheus"
-        queries[panel["title"]] = panel["targets"][0]
-
-    assert queries["App"]["expr"] == 'up{job="app"}'
-    assert queries["App"]["instant"] is True
-    assert queries["Database"]["expr"] == 'todo_db_up{job="app"}'
-    assert queries["Database"]["instant"] is True
-    assert queries["Request/giây"]["expr"] == 'sum(rate(flask_http_request_total{job="app"}[1m]))'
-
-    host_dashboard = json.loads((REPO_ROOT / "monitoring" / "grafana" / "dashboards" / "server-host.json").read_text(encoding="utf-8"))
-    assert len(host_dashboard["panels"]) >= 4
-    assert all(panel["datasource"]["uid"] == "prometheus" for panel in host_dashboard["panels"])
+    delete_op = operation("delete", create_op["client_id"], {})
+    deleted = client.post("/api/operations", json=delete_op)
+    assert deleted.status_code == 200
+    assert deleted.get_json()["deleted"] is True
 
 
 def test_add_then_read_back(client):

@@ -282,6 +282,7 @@
           },
           "mappings": [],
           "min": 0,
+          "noValue": "No data",
           "thresholds": {
             "mode": "absolute",
             "steps": [

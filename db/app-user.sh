@@ -2,7 +2,7 @@
 # Tạo/cập nhật tài khoản PostgreSQL quyền hẹp cho ứng dụng (mặc định: todo_app).
 # Chạy lặp lại an toàn (idempotent), không ghi mật khẩu ra log, dùng chung cho:
 #   - khởi tạo DB mới (/docker-entrypoint-initdb.d/20-app-user.sh),
-#   - bước quản trị khi deploy trên volume cũ (scripts/deploy.sh),
+#   - bước quản trị khi chuẩn bị server / deploy trên volume cũ,
 #   - kiểm thử tự động trong CI.
 (
   set +x
@@ -12,12 +12,20 @@
   TARGET_DB="${POSTGRES_DB:-${DB_NAME:-}}"
   TARGET_SCHEMA="${APP_DB_SCHEMA:-public}"
 
-  if [ -z "$ADMIN_USER" ] || [ -z "$TARGET_DB" ]; then
-    echo "ERROR: POSTGRES_USER and POSTGRES_DB must be set." >&2
+  non_blank() {
+    [ -n "$(printf '%s' "$1" | tr -d '[:space:]')" ]
+  }
+
+  if ! non_blank "$ADMIN_USER" || ! non_blank "$TARGET_DB"; then
+    echo "ERROR: POSTGRES_USER and POSTGRES_DB must be set and non-empty." >&2
     exit 1
   fi
-  if [ -z "${APP_DB_USER:-}" ] || [ -z "${APP_DB_PASSWORD:-}" ]; then
-    echo "ERROR: APP_DB_USER and APP_DB_PASSWORD must be set." >&2
+  if ! non_blank "${APP_DB_USER:-}" || ! non_blank "${APP_DB_PASSWORD:-}"; then
+    echo "ERROR: APP_DB_USER and APP_DB_PASSWORD must be set and non-empty." >&2
+    exit 1
+  fi
+  if [ "$APP_DB_USER" = "$ADMIN_USER" ]; then
+    echo "ERROR: APP_DB_USER ($APP_DB_USER) must be distinct from admin user ($ADMIN_USER)." >&2
     exit 1
   fi
 
@@ -53,6 +61,7 @@ DECLARE
     v_pass text := current_setting('todo.app_password');
     v_db text := current_setting('todo.target_db');
     v_schema text := current_setting('todo.target_schema');
+    v_obj text;
     r record;
 BEGIN
     IF v_user IS NULL OR btrim(v_user) = '' THEN
@@ -64,6 +73,25 @@ BEGIN
     IF v_user = current_user OR v_user = session_user THEN
         RAISE EXCEPTION 'APP_DB_USER (%) must be distinct from admin user (%)', v_user, current_user;
     END IF;
+
+    FOREACH v_obj IN ARRAY ARRAY[
+        'todos',
+        'todos_id_seq',
+        'todo_operations',
+        'todo_tombstones',
+        'todo_categories',
+        'todo_category_tombstones'
+    ]
+    LOOP
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_catalog.pg_class c
+            JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = v_schema AND c.relname = v_obj
+        ) THEN
+            RAISE EXCEPTION 'Required object %.% does not exist; run admin migration first', v_schema, v_obj;
+        END IF;
+    END LOOP;
 
     IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = v_user) THEN
         EXECUTE format(
@@ -166,4 +194,3 @@ COMMIT;
 SQL
   echo "Configured least-privilege role '$APP_DB_USER' on database '$TARGET_DB' (schema '$TARGET_SCHEMA')."
 )
-
