@@ -1,0 +1,30 @@
+groups:
+  - name: todo_monitoring_alerts
+    rules:
+      - alert: AppDown
+        expr: up{job="app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Todo backend ngung phan hoi (AppDown)"
+          description: "Prometheus khong scrape duoc {{ $labels.instance }} (job={{ $labels.job }}) lien tuc trong 1 phut."
+
+      - alert: DatabaseDown
+        expr: todo_db_up{job="app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Todo app mat ket noi PostgreSQL (DatabaseDown)"
+          description: "Metric todo_db_up bang 0 tai {{ $labels.instance }} lien tuc trong 1 phut."
+
+      - alert: HighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes{job="node"} / node_memory_MemTotal_bytes{job="node"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAM may chu vuot 90% (HighMemory)"
+          description: "Muc su dung RAM tren {{ $labels.instance }} vuot 90% lien tuc trong 5 phut (hien tai: {{ printf \"%.1f\" $value }}%)."
+

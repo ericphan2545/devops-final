@@ -1,11 +1,11 @@
 # Todo · DevOps Final Project
 
-Ứng dụng quản lý công việc dùng **Flask + PostgreSQL**, triển khai bằng **Docker Compose trên AWS EC2**, đặt sau **Nginx** và tự động kiểm tra/triển khai bằng **GitHub Actions**.
+Ứng dụng quản lý công việc dùng **Flask + PostgreSQL**, triển khai bằng **Docker Compose trên AWS EC2**, đặt sau **Nginx**, giám sát bằng **Prometheus + Alertmanager + node-exporter + Grafana** và tự động kiểm tra/triển khai bằng **GitHub Actions**.
 
 - **Repository:** [ericphan2545/devops-final](https://github.com/ericphan2545/devops-final)
 - **Địa chỉ triển khai của nhóm:** [todo-devops.duckdns.org](http://todo-devops.duckdns.org)
 - **Nhánh triển khai tự động:** `main`; thay đổi từ nhánh tính năng được kiểm tra qua pull request trước khi merge.
-- **Phạm vi đồ án:** tuần 1 — server và triển khai đầu tiên; tuần 2 — Docker và CI/CD. Giao diện mới, phân loại tuỳ chỉnh và offline-first là **phần bonus**, không thay thế yêu cầu của hai tuần.
+- **Phạm vi đồ án:** tuần 1 — server và triển khai đầu tiên; tuần 2 — Docker và CI/CD; tuần 3 — phân quyền PostgreSQL tối thiểu cho app, tách migration sang bước quản trị và tích hợp bộ giám sát 7 service kèm provisioning Grafana. Giao diện mới, phân loại tuỳ chỉnh và offline-first là **phần bonus**, không thay thế yêu cầu của môn học.
 
 ## Mục lục
 
@@ -13,25 +13,26 @@
 - [2. Công nghệ và kiến trúc](#2-công-nghệ-và-kiến-trúc)
 - [3. Tuần 1 — Server và triển khai đầu tiên](#3-tuần-1--server-và-triển-khai-đầu-tiên)
 - [4. Tuần 2 — Docker và CI/CD](#4-tuần-2--docker-và-cicd)
-- [5. Phần bonus — Giao diện và quản lý công việc](#5-phần-bonus--giao-diện-và-quản-lý-công-việc)
-- [6. Cấu trúc repository](#6-cấu-trúc-repository)
-- [7. Chạy trên máy cá nhân](#7-chạy-trên-máy-cá-nhân)
-- [8. Triển khai EC2 và DuckDNS](#8-triển-khai-ec2-và-duckdns)
-- [9. Kiểm thử và kiểm tra vận hành](#9-kiểm-thử-và-kiểm-tra-vận-hành)
-- [10. Dữ liệu, migration và đồng bộ](#10-dữ-liệu-migration-và-đồng-bộ)
-- [11. Endpoint và form](#11-endpoint-và-form)
-- [12. Minh chứng tuần 1 và tuần 2](#12-minh-chứng-tuần-1-và-tuần-2)
-- [13. Xử lý sự cố](#13-xử-lý-sự-cố)
-- [14. Nguồn và ghi chú](#14-nguồn-và-ghi-chú)
+- [5. Tuần 3 — Phân quyền DB, giám sát và Grafana](#5-tuần-3--phân-quyền-db-giám-sát-và-grafana)
+- [6. Phần bonus — Giao diện và quản lý công việc](#6-phần-bonus--giao-diện-và-quản-lý-công-việc)
+- [7. Cấu trúc repository](#7-cấu-trúc-repository)
+- [8. Chạy trên máy cá nhân](#8-chạy-trên-máy-cá-nhân)
+- [9. Triển khai EC2 và DuckDNS](#9-triển-khai-ec2-và-duckdns)
+- [10. Kiểm thử và kiểm tra vận hành](#10-kiểm-thử-và-kiểm-tra-vận-hành)
+- [11. Dữ liệu, migration và đồng bộ](#11-dữ-liệu-migration-và-đồng-bộ)
+- [12. Endpoint và form](#12-endpoint-và-form)
+- [13. Minh chứng tuần 1 và tuần 2](#13-minh-chứng-tuần-1-và-tuần-2)
+- [14. Xử lý sự cố](#14-xử-lý-sự-cố)
+- [15. Nguồn và ghi chú](#15-nguồn-và-ghi-chú)
 
 ## 1. Thành viên và phân công
 
-| Thành viên | MSSV | Nhiệm vụ tuần 1 | Nhiệm vụ tuần 2 |
-| --- | --- | --- | --- |
-| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** |
-| **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** |
-| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi |
-| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets |
+| Thành viên | MSSV | Nhiệm vụ tuần 1 | Nhiệm vụ tuần 2 | Nhiệm vụ tuần 3 |
+| --- | --- | --- | --- | --- |
+| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | — |
+| **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana |
+| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | — |
+| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | — |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
 
@@ -39,11 +40,12 @@
 
 | Thành phần | Công nghệ/cấu hình trong repo |
 | --- | --- |
-| Backend | Python 3.12, Flask, Gunicorn; container chạy bằng user thường |
-| Database | PostgreSQL 17, dữ liệu lưu trong volume `db-data` |
-| Reverse proxy | Nginx, nhận HTTP cổng 80 |
-| Đóng gói | Dockerfile và Docker Compose |
-| CI/CD | GitHub Actions; pytest, Docker build, SSH deploy |
+| Backend | Python 3.12, Flask, Gunicorn (1 worker, 4 threads); container chạy bằng `appuser`, kết nối DB bằng tài khoản quyền hẹp `APP_DB_USER` (`todo_app`) |
+| Database | PostgreSQL 17, dữ liệu lưu trong volume `db-data`; migration chạy bằng container một lần với tài khoản quản trị khi deploy |
+| Reverse proxy | Nginx (`nginx:1.30-alpine`), nhận HTTP cổng 80 duy nhất ra host; proxy `/` vào Flask và `/grafana/` (kèm WebSocket) vào Grafana; chặn `/metrics` (403) |
+| Giám sát & Cảnh báo | Prometheus (`prom/prometheus:v2.55.1`, lưu 7 ngày), Alertmanager (`prom/alertmanager:v0.28.1`, Discord `webhook_url_file`), node-exporter (`prom/node-exporter:v1.9.1`), Grafana (`grafana/grafana:11.6.0`) |
+| Đóng gói & Log | Dockerfile và Docker Compose (7 service thường trực, giới hạn xoay vòng log `json-file` `10m` × `3`) |
+| CI/CD | GitHub Actions; kiểm tra cú pháp script, migration/phân quyền PostgreSQL, pytest, Docker build, kiểm tra `promtool`/`amtool`, SSH deploy |
 | Hạ tầng | EC2 Ubuntu 24.04; cấu hình nhóm dùng t3.small, ổ 20 GiB |
 | Tên miền | DuckDNS: `todo-devops.duckdns.org` |
 | Frontend bonus | Jinja2, HTML, CSS Variables, Vanilla JavaScript; không dùng thư viện frontend/CDN |
@@ -56,15 +58,21 @@ Người dùng
     │ HTTP :80 — todo-devops.duckdns.org
     ▼
 EC2 Ubuntu 24.04
-    └── Docker Compose
-         ├── Nginx :80  ──► Flask/Gunicorn :8000 ──► PostgreSQL :5432
-         │                                              └── volume db-data
-         └── App và DB giao tiếp qua mạng nội bộ Compose
+    └── Docker Compose (7 service thường trực, chỉ Nginx publish :80)
+         ├── Nginx :80  ──────────► Flask/Gunicorn :8000 (DB user: todo_app) ──► PostgreSQL :5432 (volume db-data)
+         │      └── /grafana/ ────► Grafana :3000 (volume grafana-data)
+         │                              │
+         │                              ▼
+         └── Mạng nội bộ giám sát: Prometheus :9090 (volume prometheus-data)
+                                    ├── scrape 15s ──► app:8000/metrics (todo_db_up, flask_http_request_total)
+                                    ├── scrape 15s ──► node-exporter:9100/metrics (/proc, /sys, / read-only)
+                                    └── cảnh báo ────► Alertmanager :9093 ──► Discord Webhook (file secret read-only)
 
-GitHub → Actions: test → build → SSH vào EC2 → scripts/deploy.sh → /health
+GitHub → Actions: test → build → SSH vào EC2 → scripts/deploy.sh:
+  kiểm tra config → build app → migrate (1 lần, admin DB) → cấp quyền todo_app → up 7 service → nginx -t/reload → kiểm tra readiness
 ```
 
-Chỉ Nginx publish cổng ra host. App và PostgreSQL không publish cổng trực tiếp ra Internet. `/health` kiểm tra kết nối DB; Nginx chặn truy cập `/metrics` từ bên ngoài bằng HTTP 403. File nguồn sơ đồ: [architecture.drawio](docs/architecture.drawio). Hình tuần 1 mô tả kiến trúc triển khai cơ bản; chi tiết bonus xem [thiết kế đồng bộ](docs/offline-first.md).
+Chỉ Nginx publish cổng 80 ra host. PostgreSQL, Flask, Grafana, Prometheus, Alertmanager và node-exporter không publish cổng trực tiếp ra Internet. `/health` và metric `todo_db_up` kiểm tra kết nối DB thật bằng tài khoản app; Nginx chặn truy cập `/metrics` từ bên ngoài bằng HTTP 403. File nguồn sơ đồ tuần 1: [architecture.drawio](docs/architecture.drawio). Chi tiết bonus xem [thiết kế đồng bộ](docs/offline-first.md).
 
 ## 3. Tuần 1 — Server và triển khai đầu tiên
 
@@ -102,13 +110,11 @@ Chỉ Nginx publish cổng ra host. App và PostgreSQL không publish cổng tr�
 | `test_empty_title_is_not_saved` | Tên chỉ có khoảng trắng không tạo dữ liệu |
 | `test_delete_removes_todo` | Xoá việc khỏi DB và danh sách |
 
-Bộ test hiện có thêm các trường hợp cho API, migration, phân loại và đồng bộ bonus. [pytest.ini](pytest.ini) cấu hình import từ thư mục gốc; [requirements-dev.txt](requirements-dev.txt) chứa dependencies kiểm thử.
+Bộ test có thêm các trường hợp cho API, migration, phân loại, đồng bộ ngoại tuyến và (từ tuần 3) metric `todo_db_up`, kiểm thử quyền hẹp của `todo_app` cùng kiểm tra tĩnh cấu hình trong [tests/test_week3_config.py](tests/test_week3_config.py). [pytest.ini](pytest.ini) cấu hình import từ thư mục gốc; [requirements-dev.txt](requirements-dev.txt) chứa dependencies kiểm thử.
 
 ### Bước 2 — Deploy và mã phiên bản
 
-[scripts/deploy.sh](scripts/deploy.sh) lấy mã commit hiện tại, gán `APP_VERSION`, build/chạy Compose, reload Nginx và kiểm tra `/health` tối đa 20 lần, cách nhau 3 giây. Thành công sẽ in `Deploy OK: phiên bản ...`; thất bại sẽ in log app và trả mã lỗi.
-
-`APP_VERSION` được truyền qua Compose. Xem mã phiên bản ở **footer → Phiên bản**. Nếu chạy Compose mà chưa gán biến này, ứng dụng hiển thị `dev`.
+[scripts/deploy.sh](scripts/deploy.sh) lấy mã commit hiện tại, gán `APP_VERSION`, thực thi quy trình triển khai và kiểm tra sức khoẻ hệ thống. `APP_VERSION` được truyền qua Compose. Xem mã phiên bản ở **footer → Phiên bản**. Nếu chạy Compose mà chưa gán biến này, ứng dụng hiển thị `dev`.
 
 ### Bước 3 — GitHub Secrets
 
@@ -127,23 +133,23 @@ Workflow: [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml).
 
 | Job | Công việc | Điều kiện |
 | --- | --- | --- |
-| `test` | Dựng PostgreSQL 17 tạm, cài dependencies, chạy `pytest -v` với Python 3.12 | Push vào `main` hoặc pull request hướng vào `main` |
-| `build` | Build image từ `app/Dockerfile` | Job `test` thành công |
+| `test` | Dựng PostgreSQL 17 tạm, kiểm tra cú pháp shell script, kiểm tra `migrate.py` + `db/app-user.sh` chạy lặp lại được, chạy `pytest -v` (bao gồm kiểm thử app dưới user DB quyền hẹp và kiểm tra cấu hình tĩnh) | Push vào `main` hoặc pull request hướng vào `main` |
+| `build` | Build image từ `app/Dockerfile`, kiểm tra `docker compose config`, kiểm tra cấu hình Prometheus/Alertmanager bằng `promtool` và `amtool` | Job `test` thành công |
 | `deploy` | SSH vào EC2, pull `main`, chạy `scripts/deploy.sh` | Job `build` thành công và sự kiện là push vào `main` |
 
 ```text
 Pull request → test → build                  (không deploy)
-Push main    → test → build → deploy → kiểm tra /health
+Push main    → test → build → deploy → kiểm tra /health, API, /metrics (403) và bộ giám sát
                  └─ lỗi: build/deploy bị bỏ qua
 ```
 
-Job build kiểm tra Dockerfile; server build lại image khi deploy, chưa dùng container registry. Test Node.js cho bonus hiện chạy riêng, chưa được thêm vào workflow. Nếu `/health` hỏng sau deploy, pipeline báo lỗi; script hiện **chưa tự rollback**. Trường hợp test hỏng trước deploy thì bản lỗi không được đưa lên server.
+Job build kiểm tra Dockerfile và cấu hình hệ thống; server build lại image khi deploy, chưa dùng container registry. Nếu `/health` hoặc các thành phần giám sát hỏng sau deploy, pipeline báo lỗi theo từng giai đoạn; script hiện **chưa tự rollback**. Trường hợp test hoặc kiểm tra cấu hình hỏng trước deploy thì bản lỗi không được đưa lên server.
 
 ### Bước 5 — Chạy pipeline, kiểm tra dữ liệu và đo thời gian
 
 Sau một thay đổi hợp lệ đã vào `main`, đối chiếu ba job xanh, dòng `Deploy OK`, mã phiên bản trên web và dữ liệu đã có trước lần deploy.
 
-Bảng dưới ghi số liệu lấy từ mục **Total duration** trong GitHub Actions. Ba lần chạy trên `main` dưới đây đều có test, build và deploy thành công; mỗi lần có ảnh riêng, xác định theo mã commit:
+Bảng dưới ghi số liệu tuần 2 lấy từ mục **Total duration** trong GitHub Actions. Ba lần chạy trên `main` dưới đây đều có test, build và deploy thành công; mỗi lần có ảnh riêng, xác định theo mã commit:
 
 | Lần | Mã commit | Total duration | Link lần chạy/ghi chú |
 | --- | --- | --- | --- |
@@ -157,7 +163,92 @@ Theo kịch bản môn học: ghi lại phiên bản đang chạy, tạo một c
 
 Minh chứng CI/CD cần được ghi từ GitHub Actions và server thực tế, không dùng kết quả test cục bộ thay cho log deploy.
 
-## 5. Phần bonus — Giao diện và quản lý công việc
+## 5. Tuần 3 — Phân quyền DB, giám sát và Grafana
+
+Phần này mô tả cấu hình mã nguồn đã chuẩn bị cho **Bước 1, Bước 2 và Bước 3** của tuần 3 (chưa bao gồm bài diễn tập cảnh báo Discord, backup/restore định kỳ, UFW hay biên bản sự cố của các bước sau; chưa ghi nhận kết quả chạy thực tế trên EC2 cho đến khi nhóm chạy nghiệm thu).
+
+### 5.1. Thứ tự bắt buộc khi nâng cấp server hiện có: Chuẩn bị Bước 1 trước, Merge/Deploy sau
+
+Khi merge nhánh tuần 3 vào `main`, GitHub Actions sẽ tự động SSH vào EC2 và gọi `scripts/deploy.sh`. Script deploy yêu cầu server **đã có sẵn** các biến môi trường mới trong `.env` và file `secrets/discord_webhook_url`.
+
+Để tránh vòng lặp *"phải merge/deploy trước thì trên server mới có script `prepare-step1.sh`, nhưng merge trước khi chuẩn bị thì deploy lại báo lỗi thiếu biến/webhook"*, nhóm thực hiện đúng thứ tự:
+
+1. Mở Pull Request trên GitHub, chờ 2 job `test` và `build` chạy xanh (**chưa bấm Merge**).
+2. Trên EC2 (vẫn đang đứng ở nhánh `main` sạch), chạy Bước 1 theo **một trong hai cách không phụ thuộc tên nhánh tạm**:
+   - **Cách A — Lấy trực tiếp từ commit của PR qua `FETCH_HEAD` (không đổi nhánh trên EC2):**
+     ```bash
+     cd ~/devops-todo
+     git fetch origin pull/<SO_PR>/head
+     PREPARE_GIT_REF=FETCH_HEAD bash <(git show FETCH_HEAD:scripts/prepare-step1.sh)
+     ```
+   - **Cách B — Copy 2 script lên `/tmp` từ máy cá nhân qua `scp`:**
+     ```bash
+     # Chạy trên máy cá nhân:
+     scp scripts/prepare-step1.sh db/app-user.sh ubuntu@todo-devops.duckdns.org:/tmp/
+     # Chạy trên EC2:
+     cd ~/devops-todo
+     APP_USER_SCRIPT_PATH=/tmp/app-user.sh bash /tmp/prepare-step1.sh
+     ```
+3. Kiểm tra `git status` trên EC2 vẫn sạch (`working tree clean`), chụp bảng kiểm chứng quyền ở cuối Bước 1, rồi mới bấm **Merge pull request** trên GitHub để tự động deploy.
+
+### 5.2. Bước 1 — Chuẩn bị server và tài khoản PostgreSQL quyền hẹp (`todo_app`)
+
+- [scripts/prepare-step1.sh](scripts/prepare-step1.sh):
+  - Tạo bản sao lưu dự phòng toàn bộ database (`pg_dump -Fc` kèm kiểm tra `pg_restore --list`) vào `backups/` (`chmod 600`, nằm ngoài Git) trước khi thay đổi quyền/schema.
+  - Giữ nguyên `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` của volume hiện tại; bổ sung `APP_DB_USER`, `APP_DB_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`, `GRAFANA_ROOT_URL` khi thiếu; **báo lỗi rõ nếu biến đã khai báo nhưng để rỗng** và **không ghi đè âm thầm** mật khẩu hoặc webhook hợp lệ đã có.
+  - Lưu Discord webhook tại `secrets/discord_webhook_url` với quyền thư mục `secrets` là `0750` (`root:65534`) và file là `0640` (`root:65534`), khớp với `USER nobody` (`65534:65534`) của image `prom/alertmanager:v0.28.1` mà không mở quyền đọc cho mọi user trên host.
+- [db/app-user.sh](db/app-user.sh):
+  - Trích dẫn định danh và mật khẩu qua `\getenv` + `set_config` + `format('%I'/'%L')` của PostgreSQL, tắt shell tracing (`set +x`), chạy lặp lại không lỗi.
+  - Thu hồi quyền kế thừa từ `PUBLIC` trên database/schema/bảng/sequence, thu hồi mọi membership role quản trị, đảm bảo `todo_app` không sở hữu bảng/schema/database và không có `SUPERUSER`, `CREATEDB`, `CREATEROLE`.
+
+| Đối tượng | Quyền cấp cho `todo_app` | Ghi chú |
+| --- | --- | --- |
+| Database (`POSTGRES_DB`) | `CONNECT` | Thu hồi `CREATE`, `TEMP` từ `PUBLIC` và `todo_app` |
+| Schema `public` | `USAGE` | Không cấp `CREATE` (chặn `CREATE TABLE`) |
+| `todos` | `SELECT, INSERT, UPDATE, DELETE` | Cần `UPDATE` cho đồng bộ `/api/operations` (`update`), `/complete/<id>` và xoá nhãn phân loại |
+| `todos_id_seq` | `USAGE` | Phục vụ sinh `id` tuần tự khi `INSERT INTO todos` |
+| `todo_operations` | `SELECT, INSERT` | Nhật ký chống gửi trùng `op_id` (không cho sửa/xoá lịch sử thao tác) |
+| `todo_tombstones` | `SELECT, INSERT` | Ghi nhận công việc đã xoá |
+| `todo_categories` | `SELECT, INSERT, DELETE` | Tương thích dữ liệu/hàng đợi phân loại |
+| `todo_category_tombstones` | `SELECT, INSERT` | Ghi nhận phân loại đã xoá |
+
+### 5.3. Bước 2 — Tách migration, cấu hình 7 service và quy trình `scripts/deploy.sh`
+
+- **Metric ứng dụng ([app/app.py](app/app.py)):** Bổ sung `db_ok()` thực thi `SELECT 1` bằng chính kết nối của `APP_DB_USER`, gắn với Prometheus `Gauge` `todo_db_up` (`1` khi kết nối thành công, `0` khi lỗi DB) được gọi mỗi lần scrape `/metrics`. Giữ nguyên 1 Gunicorn worker, `/health` và toàn bộ API ngoại tuyến.
+- **Tách migration khỏi entrypoint ([app/entrypoint.sh](app/entrypoint.sh)):** Container `app` chạy thường trực chỉ thực thi `exec gunicorn ...` dưới tài khoản `APP_DB_USER`, không nhận mật khẩu quản trị và không chạy DDL lúc khởi động lại.
+- **Mount thư mục cấu hình read-only ([docker-compose.yml](docker-compose.yml)):** Nginx (`./nginx:/etc/nginx/conf.d:ro`), Prometheus (`./monitoring/prometheus:/etc/prometheus:ro`), Alertmanager (`./monitoring/alertmanager:/etc/alertmanager:ro` và `./secrets:/etc/alertmanager-secrets:ro`) cùng Grafana đều mount theo **thư mục** read-only thay vì mount lẻ từng file, tránh hiện tượng container giữ inode cũ sau `git pull`.
+- **Thứ tự thực thi của [scripts/deploy.sh](scripts/deploy.sh) (giai đoạn `a` → `g`):**
+  1. `[a/g]` Kiểm tra biến bắt buộc trong `.env` (kèm điều kiện `APP_DB_USER != POSTGRES_USER`), kiểm tra `docker compose config`, `promtool check config`, `amtool check-config` và quyền đọc file webhook của Alertmanager.
+  2. `[b/g]` Build image `app` mới và chờ PostgreSQL `pg_isready`.
+  3. `[c/g]` Chạy container một lần từ image `app` với tài khoản quản trị (`POSTGRES_USER`/`POSTGRES_PASSWORD`) để thực thi `python migrate.py`. Nếu lỗi thì dừng deploy ngay trước khi khởi động `app` mới.
+  4. `[d/g]` Chạy `db/app-user.sh` cấp lại quyền tối thiểu cho `APP_DB_USER`. Nếu lỗi thì dừng deploy và báo đúng giai đoạn.
+  5. `[e/g]` Khởi động/cập nhật đủ 7 service (`app` chỉ nhận `APP_DB_USER`/`APP_DB_PASSWORD`).
+  6. `[f/g]` Kiểm tra `nginx -t` trước khi `nginx -s reload`.
+  7. `[g/g]` Chờ `/health` và `/api/tasks` phản hồi 200, xác nhận `/metrics` qua Nginx trả 403, gọi đồng bộ `POST /-/reload` trên Prometheus và Alertmanager, đối chiếu trực tiếp metric `prometheus_config_last_reload_successful == 1`, `alertmanager_config_last_reload_successful == 1`, danh sách 3 luật cảnh báo (`AppDown`, `DatabaseDown`, `HighMemory`) trong `/api/v1/rules`, metric `node-exporter`, `/grafana/api/health` và đủ `7/7` service ở trạng thái `running`.
+
+### 5.4. Bước 3 — Provisioning Grafana và lưu ý quản lý Dashboard JSON
+
+- Grafana phục vụ tại `http://todo-devops.duckdns.org/grafana/` với `GF_SERVER_ROOT_URL` có dấu `/` cuối, `GF_SERVER_SERVE_FROM_SUB_PATH=true`, `GF_USERS_ALLOW_SIGN_UP=false`; Nginx chuyển tiếp nguyên đường dẫn `/grafana/` và nâng cấp kết nối WebSocket cho `/grafana/api/live/`.
+- Datasource Prometheus được provision tự động tại [monitoring/grafana/provisioning/datasources/prometheus.yml](monitoring/grafana/provisioning/datasources/prometheus.yml) (`url: http://prometheus:9090`, UID cố định `prometheus`).
+- Hai dashboard được provision tự động qua [monitoring/grafana/provisioning/dashboards/dashboards.yml](monitoring/grafana/provisioning/dashboards/dashboards.yml):
+  1. **Todo App** ([monitoring/grafana/dashboards/todo-app.json](monitoring/grafana/dashboards/todo-app.json)):
+     - `App`: `up{job="app"}` (Stat instant query: `1` = `UP`, `0` = `DOWN`, mất dữ liệu = `No data`).
+     - `Database`: `todo_db_up{job="app"}` (Stat instant query + phép tính `last`: khi `app` dừng làm mất mẫu scrape sẽ hiển thị `No data` màu cảnh báo, không lấy mẫu cũ để báo giả thành `UP`).
+     - `Request/giây`: `sum(rate(flask_http_request_total{job="app"}[1m]))` (Time series).
+  2. **EC2 Server Resources** ([monitoring/grafana/dashboards/server-host.json](monitoring/grafana/dashboards/server-host.json)): trạng thái `up{job="node"}`, đồng hồ và đồ thị thời gian cho CPU host (%), RAM host (%) và ổ đĩa gốc `/` của máy chủ EC2.
+- **Lưu ý về sửa dashboard trên giao diện web vs lưu trong Git:** Thư mục `/etc/grafana/dashboards` trong container được mount ở chế độ **read-only (`:ro`)** từ `monitoring/grafana/dashboards/` trong repo. Mặc dù `allowUiUpdates: true` cho phép thử chỉnh sửa bố cục tạm thời trên trình duyệt, **Grafana không tự ghi thay đổi ngược về file JSON hay commit vào Git**, và thay đổi trên UI có thể mất khi tạo lại volume/container. Nếu muốn lưu vĩnh viễn một chỉnh sửa dashboard (hoặc import thêm dashboard cộng đồng như ID `1860`), cần bấm **Share → Export → Save to file** và commit file JSON vào `monitoring/grafana/dashboards/`.
+
+### 5.5. Checklist kiểm chứng và minh chứng cần thu thập cho Bước 1–3
+
+*(Trạng thái dưới đây dùng để nhóm kiểm tra khi chạy thực tế trên GitHub Actions và EC2; chỉ đánh dấu sau khi đã có kết quả và ảnh chụp thật, che toàn bộ mật khẩu và URL webhook).*
+
+- [ ] **Bước 1 — Backup & Biến môi trường:** Có file backup dự phòng trong `backups/`; `.env` quyền `600`; `secrets/discord_webhook_url` quyền `root:65534` (`640`), container Alertmanager đọc được file mà không in nội dung bí mật.
+- [ ] **Bước 1 — Phân quyền DB:** Ảnh/kết quả truy vấn chứng minh `todo_app` không có `rolsuper`/`rolcreatedb`/`rolcreaterole`, không sở hữu bảng, có quyền DML đúng thiết kế và không có quyền `CREATE` trên schema `public`.
+- [ ] **Bước 2 — CI & Triển khai 7 service:** Pipeline GitHub Actions xanh (`test` → `build` → `deploy`); `docker compose ps` trên EC2 có đủ 7 service `Up` và chỉ `nginx` mở cổng `80`.
+- [ ] **Bước 2 — Vận hành bằng user quyền hẹp:** `/health` trả `200`, `/metrics` qua Nginx trả `403`, thêm/xoá và đồng bộ công việc trên UI-basic hoạt động bình thường; `docker compose restart app` không chạy DDL và không báo lỗi `must be owner`; cấu hình log `json-file` `10m` × `3` được áp dụng.
+- [ ] **Bước 3 — Grafana Datasource & Dashboards:** Đăng nhập được `/grafana/`, datasource `Prometheus` (`uid: prometheus`) truy vấn thành công; có ảnh minh chứng dashboard **EC2 Server Resources** (CPU, RAM, ổ đĩa host) và dashboard **Todo App** (`App`, `Database`, `Request/giây`).
+
+## 6. Phần bonus — Giao diện và quản lý công việc
 
 **Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Giao diện hiện tại dùng bố cục trong `todo-clean.zip`: một cột giữa màn hình, nền sáng, màu nhấn xanh, responsive và không dùng thư viện/CDN. Phần này không thay thế nhiệm vụ tuần 1–2.
 
@@ -172,32 +263,49 @@ Sidebar, lịch, ưu tiên, tiến độ, phân loại và đánh dấu hoàn th
 
 Ứng dụng dùng danh sách chung, chưa có tài khoản riêng. Bản Flask gọi API thật, lưu PostgreSQL. Bản HTML xem thử là bản cục bộ riêng và ghi rõ lưu trên thiết bị, không kết nối EC2.
 
-## 6. Cấu trúc repository
+## 7. Cấu trúc repository
 
 ```text
-.github/workflows/ci-cd.yml   # test → build → deploy
+.github/workflows/ci-cd.yml   # test → build → deploy (chỉ deploy khi push main)
 app/
-  app.py                    # Form, API, health và endpoint Service Worker
-  categories.py             # Kiểm tra và lưu phân loại
-  migrate.py                # Migration giữ dữ liệu hiện có
-  schema.sql                # Schema chuẩn
+  app.py                      # Form, API, health, metric todo_db_up và Service Worker
+  categories.py               # Kiểm tra và lưu phân loại
+  migrate.py                  # Migration giữ dữ liệu hiện có (chạy bằng user quản trị khi deploy)
+  schema.sql                  # Schema chuẩn
   Dockerfile
-  entrypoint.sh             # Migration trước Gunicorn
+  entrypoint.sh               # Chỉ khởi chạy Gunicorn (1 worker, 4 threads)
   requirements.txt
   templates/index.html
   static/
-    app.js                  # UI, IndexedDB và đồng bộ
+    app.js                    # UI, IndexedDB và đồng bộ
     style.css
     service-worker.js
   .dockerignore
-db/init.sql                 # Schema cho DB mới; khớp app/schema.sql
-nginx/default.conf
+db/
+  init.sql                    # Schema khởi tạo cho DB mới; khớp app/schema.sql
+  app-user.sh                 # Tạo và cấp quyền tối thiểu cho tài khoản DB ứng dụng (idempotent)
+monitoring/
+  prometheus/
+    prometheus.yml            # Scrape 15s cho prometheus, app và node-exporter
+    alerts.yml                # Luật cảnh báo AppDown, DatabaseDown, HighMemory
+  alertmanager/
+    alertmanager.yml          # Route sang Discord qua webhook_url_file + send_resolved
+  grafana/
+    provisioning/
+      datasources/prometheus.yml
+      dashboards/dashboards.yml
+    dashboards/
+      todo-app.json           # Dashboard App, Database, Request/giây
+      server-host.json        # Dashboard CPU, RAM, ổ đĩa host EC2
+nginx/default.conf            # Chặn /metrics, proxy /grafana/ (+ WS) và proxy / sang app
 scripts/
-  setup-server.sh           # Bootstrap EC2 và cập nhật DuckDNS
-  deploy.sh                 # Triển khai và kiểm tra health
+  setup-server.sh             # Bootstrap EC2 mới (tương thích tuần 3, yêu cầu webhook trước khi hoàn tất)
+  prepare-step1.sh            # Chuẩn bị Bước 1 trên EC2 trước khi merge/deploy cấu hình tuần 3
+  deploy.sh                   # Kiểm tra config → migrate quản trị → cấp quyền app → up 7 service → kiểm tra readiness
 tests/
-  test_app.py               # Pytest với PostgreSQL
-  offline.test.cjs           # Logic client với Node.js
+  test_app.py                 # Pytest tích hợp với PostgreSQL thật (admin migration + least-privilege app user)
+  test_week3_config.py        # Pytest kiểm tra tĩnh cấu hình, dashboard provisioning và unit test metric
+  offline.test.cjs            # Logic đồng bộ client với Node.js
 docs/
   architecture.drawio
   architecture.png
@@ -213,7 +321,7 @@ requirements-dev.txt
 README.md
 ```
 
-## 7. Chạy trên máy cá nhân
+## 8. Chạy trên máy cá nhân
 
 Cần Git, Docker Engine và Docker Compose plugin. Trên Windows, dùng Docker Desktop với Linux containers.
 
@@ -222,51 +330,44 @@ git clone https://github.com/ericphan2545/devops-final.git
 cd devops-final
 ```
 
-Nếu đang xem README trên nhánh `UI-new` và phần bonus chưa merge vào `main`, chuyển sang đúng nhánh để thử các thay đổi đó:
-
-```bash
-git switch UI-new
-```
-
-Tạo `.env` nếu chưa có. PowerShell:
-
-```powershell
-if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
-```
-
-Linux/macOS/Git Bash:
+Tạo `.env` từ `.env.example` nếu chưa có (Linux/macOS/Git Bash):
 
 ```bash
 test -f .env || cp .env.example .env
 ```
 
-Mở `.env`, đổi `POSTGRES_PASSWORD` trước lần tạo DB đầu tiên. Các biến mẫu gồm `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`; Compose truyền cấu hình tương ứng sang app dưới tên `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+PowerShell:
+
+```powershell
+if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
+```
+
+Mở `.env`, đặt mật khẩu riêng cho `POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `GRAFANA_ADMIN_PASSWORD` (bảo đảm `APP_DB_USER` khác `POSTGRES_USER`); khi chạy cục bộ có thể đặt `GRAFANA_ROOT_URL=http://localhost/grafana/`. Đồng thời tạo file `secrets/discord_webhook_url` chứa URL Discord webhook thử nghiệm hợp lệ (ngoài Git) để Alertmanager nạp được cấu hình.
+
+Trên Linux/macOS/WSL2, có thể chạy trực tiếp quy trình đầy đủ qua script deploy:
 
 ```bash
-docker compose config --quiet
-docker compose up -d --build
+bash scripts/deploy.sh
 docker compose ps
 ```
 
-Mở [http://localhost](http://localhost). `db` cần healthy, `app` và `nginx` cần hoạt động.
+Mở [http://localhost](http://localhost) cho ứng dụng Todo và [http://localhost/grafana/](http://localhost/grafana/) cho Grafana.
 
-## 8. Triển khai EC2 và DuckDNS
+## 9. Triển khai EC2 và DuckDNS
 
-### Dựng server bằng User data
+### Dựng server mới bằng User data
 
-Dùng [scripts/setup-server.sh](scripts/setup-server.sh) trên EC2 Ubuntu 24.04. Điền token DuckDNS khi cấu hình User data; giữ `DUCKDNS_TOKEN` trong file trên Git là rỗng.
+Dùng [scripts/setup-server.sh](scripts/setup-server.sh) trên EC2 Ubuntu 24.04. Khi dán vào ô **User data**, có thể điền `DUCKDNS_TOKEN` và `DISCORD_WEBHOOK_URL` trực tiếp trên AWS Console; trong Git luôn giữ hai biến này rỗng.
 
-Script cài Docker/Compose, chuẩn bị quyền cho user `ubuntu`, clone repo vào `/home/ubuntu/devops-todo`, tạo `.env` nếu chưa có và khởi động hệ thống. Khi có token, script tạo tác vụ cập nhật DuckDNS lúc khởi động và mỗi 5 phút.
-
-DuckDNS ánh xạ tên miền tới IP public hiện tại, không biến IP thành IP tĩnh. Truy cập/SSH dùng `todo-devops.duckdns.org`; không cần đổi `EC2_HOST` mỗi khi IP đổi nếu bản ghi đã được cập nhật đúng.
+- Script cài Docker/Compose, cấu hình cron cập nhật DuckDNS (nếu có token), clone repo vào `/home/ubuntu/devops-todo`, sinh `.env` với mật khẩu ngẫu nhiên (`chmod 600`) và tạo thư mục `secrets` (`0750`, `root:65534`), không bật shell tracing trên các đoạn xử lý bí mật.
+- **Nếu đã điền `DISCORD_WEBHOOK_URL` hợp lệ:** script ghi `secrets/discord_webhook_url` (`0640`, `root:65534`) rồi gọi `scripts/deploy.sh` để chạy migration, cấp quyền `todo_app`, khởi động đủ 7 service và chỉ in `SETUP XONG` khi mọi kiểm tra health/monitoring đạt.
+- **Nếu chưa điền `DISCORD_WEBHOOK_URL`:** script dừng lại với hướng dẫn rõ ràng trong `/var/log/setup-server.log` (không báo giả `SETUP XONG`), chờ quản trị viên SSH vào chạy `bash scripts/prepare-step1.sh` rồi `bash scripts/deploy.sh`.
 
 Security Group cần cho phép HTTP 80 và SSH 22 từ nguồn quản trị/deploy phù hợp. Repo hiện phục vụ HTTP, chưa cấu hình chứng chỉ HTTPS.
 
-Xem log bootstrap bằng `sudo tail -f /var/log/setup-server.log`. Script có shell tracing và log có thể chứa mật khẩu/token; file log và script cập nhật DuckDNS được đặt quyền chỉ root đọc. Không đưa log chứa giá trị bí mật vào minh chứng.
+### Nâng cấp và deploy thủ công trên server đang hoạt động
 
-### Deploy thủ công
-
-Sau khi code đã được commit/push và merge vào `main`, chạy trên server:
+Với server đang chạy từ tuần trước, luôn hoàn tất **Bước 1** (xem mục [5.1](#51-thứ-tự-bắt-buộc-khi-nâng-cấp-server-hiện-có-chuẩn-bị-bước-1-trước-mergedeploy-sau)) trước khi cập nhật nhánh `main`. Sau khi code đã merge vào `main` và Bước 1 đã sẵn sàng:
 
 ```bash
 cd ~/devops-todo
@@ -276,25 +377,32 @@ git pull --ff-only origin main
 bash scripts/deploy.sh
 ```
 
-Nếu server có thay đổi cục bộ, xử lý chúng trước khi pull; không ghi đè hoặc reset mù. Với deploy tự động, workflow thực hiện pull/deploy trên server sau khi test và build thành công.
+Nếu server có thay đổi cục bộ, xử lý chúng trước khi pull; không ghi đè hoặc reset mù. Trong CI, workflow chỉ gọi `bash scripts/deploy.sh` (không gọi script tương tác `prepare-step1.sh`).
 
-## 9. Kiểm thử và kiểm tra vận hành
+## 10. Kiểm thử và kiểm tra vận hành
 
-### Kiểm tra hệ thống
-
-Chạy trên máy đang phục vụ Compose:
+### Kiểm tra hệ thống trên server chạy Compose
 
 ```bash
 docker compose ps
 curl --fail http://localhost/health
+curl --fail http://localhost/api/tasks
 curl -I http://localhost/metrics
+curl --fail http://localhost/grafana/api/health
 docker compose logs --tail 50 app
 docker compose logs --tail 50 nginx
 ```
 
-Kết quả mong đợi: health trả `{"status":"ok"}`, metrics qua Nginx trả 403. Trong PowerShell dùng `curl.exe` nếu `curl` đang là alias.
+Kết quả mong đợi: 7 service đều `Up` (chỉ `nginx` mở cổng `80`), `/health` trả `{"status":"ok"}`, `/metrics` qua Nginx trả `403`, `/grafana/api/health` trả `200`. Trong PowerShell dùng `curl.exe` nếu `curl` đang là alias.
 
-### Chạy test cục bộ với DB riêng
+### Kiểm tra tĩnh (không cần Docker hay PostgreSQL đang chạy)
+
+```bash
+python -m pytest tests/test_week3_config.py -v
+node tests/offline.test.cjs
+```
+
+### Chạy test tích hợp cục bộ với PostgreSQL riêng
 
 Cần Python và PostgreSQL; lệnh dưới tạo DB kiểm thử bằng Docker, không trỏ test vào DB đang phục vụ người dùng:
 
@@ -321,32 +429,16 @@ Linux/macOS/Git Bash:
 DB_HOST=localhost PGPORT=55432 DB_NAME=todo_test DB_USER=todo DB_PASSWORD=testpass python -m pytest -v
 ```
 
-Test tạo schema ngẫu nhiên riêng rồi dọn khi xong. Bộ test của bản UI/phân loại đã được kiểm tra với **38 trường hợp pytest** trên PostgreSQL; đây là kết quả kiểm thử cục bộ, không phải xác nhận trạng thái một lần chạy GitHub Actions.
+Fixture kiểm thử dùng tài khoản quản trị tạo schema ngẫu nhiên riêng, chạy migration, tạo role ứng dụng quyền hẹp tạm thời cho phiên test để thực thi toàn bộ API/form/metric dưới quyền hẹp, rồi thu dọn schema và role khi kết thúc.
 
-Kiểm thử logic bonus bằng Node.js, không cần cài thư viện frontend:
+## 11. Dữ liệu, migration và đồng bộ
 
-```bash
-node tests/offline.test.cjs
-```
+### Phân biệt dựng database mới và nâng cấp volume `db-data` cũ
 
-Trên UI, kiểm tra thêm: tìm không dấu, sắp xếp, tên dài 200 ký tự, huỷ xoá bằng Escape, đổi theme, thêm/xoá ngoại tuyến và gửi hàng đợi sau khi mạng phục hồi.
-
-## 10. Dữ liệu, migration và đồng bộ
-
-### Lưu bền và nâng cấp
-
-`db-data` giữ dữ liệu khi thay hoặc tạo lại container trên cùng host. Volume không phải bản sao lưu khi host/ổ đĩa bị mất. `docker compose down -v` xoá volume; không dùng lệnh đó để đổi UI hoặc nâng schema.
-
-`app/entrypoint.sh` chạy migration trước Gunicorn. Migration bổ sung metadata, UUID, nhật ký thao tác, tombstone và bảng phân loại; giữ công việc và ba ID phân loại cũ. Có thể chạy migration lại mà không seed trùng hoặc xoá nhóm tuỳ chỉnh. Migration dùng khoá giao dịch; công việc cũ được cấp UUID và `client_id` có default PostgreSQL để cách ghi cũ chỉ có title vẫn hoạt động.
-
-`db/init.sql` chỉ được PostgreSQL tự chạy khi khởi tạo thư mục dữ liệu rỗng. Sửa file này không tự nâng cấp volume cũ; cần rebuild/chạy app để entrypoint thực hiện migration. Sau khi có bản cập nhật:
-
-```bash
-docker compose up -d --build
-docker compose exec -T nginx nginx -s reload
-```
-
-Sao lưu DB trước thay đổi lớn. Đổi mật khẩu trong `.env` không tự đổi mật khẩu đã được lưu trong DB cũ.
+- **Dựng database mới (volume `db-data` rỗng lần đầu):** PostgreSQL tự thực thi các file trong `/docker-entrypoint-initdb.d/` theo thứ tự bảng chữ cái: `10-init.sql` ([db/init.sql](db/init.sql)) tạo đầy đủ 5 bảng và dữ liệu phân loại mặc định trước, sau đó `20-app-user.sh` ([db/app-user.sh](db/app-user.sh)) tạo tài khoản `APP_DB_USER` và cấp quyền tối thiểu.
+- **Nâng cấp volume `db-data` đã có dữ liệu:** PostgreSQL **bỏ qua** `/docker-entrypoint-initdb.d/` khi thư mục dữ liệu đã được khởi tạo. Đồng thời [app/entrypoint.sh](app/entrypoint.sh) hiện **chỉ chạy Gunicorn** bằng tài khoản quyền hẹp `APP_DB_USER` (không còn chạy `migrate.py` trong entrypoint). Thay vào đó, mỗi lần chạy [scripts/deploy.sh](scripts/deploy.sh), hệ thống khởi chạy một container ngắn hạn từ image `app` với tài khoản quản trị `POSTGRES_USER` để chạy [app/migrate.py](app/migrate.py), tiếp theo chạy [db/app-user.sh](db/app-user.sh) cấp lại quyền cho `APP_DB_USER`, rồi mới khởi động container `app` phục vụ người dùng.
+- `db-data` giữ dữ liệu khi thay hoặc tạo lại container trên cùng host, nhưng volume không thay thế bản sao lưu khi host/ổ đĩa gặp sự cố. **Không dùng `docker compose down -v`** khi nâng cấp UI, schema hay cấu hình giám sát vì lệnh `-v` sẽ xoá toàn bộ volume dữ liệu.
+- Sao lưu DB trước thay đổi lớn. Đổi `POSTGRES_PASSWORD` trong `.env` không tự đổi mật khẩu quản trị đã lưu bên trong volume DB cũ.
 
 ### Ngoại tuyến và chống gửi trùng
 
@@ -363,7 +455,7 @@ Chỉ xoá thao tác khỏi hàng đợi sau xác nhận hợp lệ. Xoá thắn
 
 Chi tiết: [docs/offline-first.md](docs/offline-first.md) và [docs/production-sync.md](docs/production-sync.md).
 
-## 11. Endpoint và form
+## 12. Endpoint và form
 
 | Endpoint | Vai trò |
 | --- | --- |
@@ -373,18 +465,19 @@ Chi tiết: [docs/offline-first.md](docs/offline-first.md) và [docs/production-
 | `POST /delete/<id>` | Xoá công việc |
 | `POST /categories/add` | Tạo phân loại qua form |
 | `POST /categories/delete` | Xoá phân loại qua form; giữ công việc |
-| `GET /health` | Kiểm tra kết nối DB |
-| `GET /metrics` | Metrics của app; bị Nginx chặn từ bên ngoài |
+| `GET /health` | Kiểm tra kết nối DB thật (`db_ok()`) |
+| `GET /metrics` | Metrics Prometheus của app (`todo_db_up`, `flask_http_request_total`, ...); chỉ đọc trong mạng nội bộ, bị Nginx chặn 403 từ bên ngoài |
 | `GET /api/tasks` | Công việc và phân loại đã lưu |
 | `GET /api/categories` | Danh sách phân loại |
 | `POST /api/operations` | Thao tác `create`, `update`, `delete`, `category_create`, `category_delete` |
 | `GET /service-worker.js` | Bộ nhớ trang ngoại tuyến, scope `/` |
+| `GET /grafana/` | Giao diện Grafana qua reverse proxy Nginx (kèm WebSocket `/grafana/api/live/`) |
 
 Các endpoint hoàn thành, lịch/metadata và phân loại được giữ để tương thích dữ liệu cũ; UI tối giản hiện chỉ dùng thêm, đọc và xoá công việc.
 
 API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo và xoá nhóm, chưa hỗ trợ sửa tên. Xoá nhóm gỡ nhãn khỏi mọi công việc trong cùng giao dịch và lưu bản ghi xoá; khi migration chạy lại, nhóm đã xoá không tự được tạo lại.
 
-## 12. Minh chứng tuần 1 và tuần 2
+## 13. Minh chứng tuần 1 và tuần 2
 
 ### Tuần 1 — File đã lưu trong repo
 
@@ -492,25 +585,27 @@ Hai ảnh ghi lại chu kỳ lỗi → revert trên **pull request**. Deploy tr�
 
 Ảnh log triển khai và ảnh revert được gửi lặp lại chỉ hiển thị một lần, không tính thành các lần chạy khác nhau. Ảnh chụp phần README cũ là tài liệu tham chiếu, không dùng làm minh chứng CI/CD.
 
-## 13. Xử lý sự cố
+## 14. Xử lý sự cố
 
 | Triệu chứng | Kiểm tra và cách xử lý |
 | --- | --- |
 | Không mở được web | Kiểm tra EC2 Running, rule HTTP 80, `docker compose ps` và đúng địa chỉ HTTP |
 | Tên miền trỏ sai IP | Kiểm tra bản ghi DuckDNS và tác vụ `/usr/local/sbin/duckdns-update`; không công khai token |
 | Docker báo permission denied | Kiểm tra user thuộc nhóm `docker`; đăng xuất/đăng nhập lại sau khi thêm nhóm |
-| Nginx trả 502 | Xem log app/DB, kiểm tra migration; reload Nginx sau khi thay container app |
-| DB báo sai mật khẩu | Đối chiếu `.env` với mật khẩu dùng lúc tạo volume; không xoá volume nếu cần giữ dữ liệu |
-| Thiếu bảng/cột hoặc API phân loại lỗi | Kiểm tra đã có đủ code mới và entrypoint chạy migration; rebuild app |
-| CI không kết nối được DB | Kiểm tra service PostgreSQL và các biến `DB_*` trong workflow |
+| Nginx trả 502 | Xem log app/DB, kiểm tra bước migration trong `scripts/deploy.sh`; chạy `nginx -t` và reload Nginx sau khi thay container |
+| DB báo sai mật khẩu | Đối chiếu `.env` với mật khẩu dùng lúc tạo volume (`POSTGRES_PASSWORD`) và mật khẩu đã cấp cho `APP_DB_USER` qua `db/app-user.sh`; không xoá volume nếu cần giữ dữ liệu |
+| Lỗi `must be owner` hoặc thiếu quyền bảng | Không chạy `migrate.py` bằng `todo_app`; chạy `scripts/deploy.sh` để thực thi migration bằng `POSTGRES_USER` rồi chạy lại `db/app-user.sh` |
+| Alertmanager không khởi động được | Kiểm tra `secrets/discord_webhook_url` là file thường (không phải thư mục), không rỗng và có quyền `root:65534` (`640`), thư mục `secrets` có quyền `750` |
+| `/grafana/` bị vòng lặp chuyển hướng | Kiểm tra `GRAFANA_ROOT_URL` kết thúc bằng `/grafana/`, `GF_SERVER_SERVE_FROM_SUB_PATH=true` và `proxy_pass http://grafana:3000;` trong `nginx/default.conf` không có dấu `/` cắt subpath |
+| CI không kết nối được DB | Kiểm tra service PostgreSQL và các biến `DB_*` / `ADMIN_DB_*` trong workflow |
 | SSH invalid format/publickey | Kiểm tra toàn bộ private key trong `EC2_SSH_KEY` và key pair đúng với server |
 | SSH timeout | Kiểm tra EC2, DNS, rule SSH 22 và kết nối từ runner |
 | Pull không fast-forward | Xem `git status` trên server và đối chiếu thay đổi trước khi cập nhật; không tự ghi đè code |
-| Script báo `$'\r'` | File `.sh` cần LF; repo có `.gitattributes` cho shell/Python/SQL |
-| Pipeline đỏ ở health | Đọc log deploy/app/DB; container Up chưa bảo đảm ứng dụng kết nối DB được |
+| Script báo `$'\r'` | File `.sh` cần LF; repo có `.gitattributes` cho shell/Python/SQL/YAML/conf |
+| Pipeline đỏ ở health/monitoring | Đọc thông báo giai đoạn `[a/g]`–`[g/g]` của `scripts/deploy.sh` và log service tương ứng |
 | UI báo chưa đồng bộ | Kiểm tra `/health`, `/api/tasks` và trạng thái cuối trang; giữ hàng đợi để gửi lại |
 
-## 14. Nguồn và ghi chú
+## 15. Nguồn và ghi chú
 
 App mẫu ban đầu được xây dựng với hỗ trợ AI (Claude); phần giao diện, đồng bộ và tài liệu có hỗ trợ AI (Codex). Nhóm kiểm tra, hiểu mã nguồn và chịu trách nhiệm với bản nộp. Phân công cá nhân ở mục 1 ghi theo đóng góp nhóm xác nhận.
 
