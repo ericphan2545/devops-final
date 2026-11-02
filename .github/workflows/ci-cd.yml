@@ -50,6 +50,15 @@ jobs:
           command -v psql >/dev/null || (sudo apt-get update && sudo apt-get install -y postgresql-client)
           pip install -r requirements-dev.txt
 
+      - name: Check shell script syntax
+        run: |
+          set -eu
+          sh -n app/entrypoint.sh
+          sh -n db/app-user.sh
+          bash -n scripts/deploy.sh
+          bash -n scripts/prepare-step1.sh
+          bash -n scripts/setup-server.sh
+
       - name: Verify migration and least-privilege DB script
         run: |
           python app/migrate.py
@@ -81,14 +90,13 @@ jobs:
           docker compose config --quiet
 
           docker run --rm \
-            -v "$PWD/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
-            -v "$PWD/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro" \
+            -v "$PWD/monitoring/prometheus:/etc/prometheus:ro" \
             --entrypoint /bin/promtool \
             prom/prometheus:v2.55.1 \
             check config /etc/prometheus/prometheus.yml
 
           docker run --rm \
-            -v "$PWD/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro" \
+            -v "$PWD/monitoring/alertmanager:/etc/alertmanager:ro" \
             --entrypoint /bin/amtool \
             prom/alertmanager:v0.28.1 \
             check-config /etc/alertmanager/alertmanager.yml
