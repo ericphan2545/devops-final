@@ -31,7 +31,7 @@
 | --- | --- | --- | --- | --- |
 | **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log |
 | **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) |
-| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo; xử lý Git conflict và đồng bộ GitHub với EC2 để khắc phục lỗi deploy |
+| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo |
 | **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | — |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
