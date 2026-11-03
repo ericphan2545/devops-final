@@ -21,7 +21,7 @@
 - [10. Kiểm thử và kiểm tra vận hành](#10-kiểm-thử-và-kiểm-tra-vận-hành)
 - [11. Dữ liệu, migration và đồng bộ](#11-dữ-liệu-migration-và-đồng-bộ)
 - [12. Endpoint và form](#12-endpoint-và-form)
-- [13. Minh chứng tuần 1 và tuần 2](#13-minh-chứng-tuần-1-và-tuần-2)
+- [13. Minh chứng tuần 1, 2 và 3](#13-minh-chứng-tuần-1-2-và-3)
 - [14. Xử lý sự cố](#14-xử-lý-sự-cố)
 - [15. Nguồn và ghi chú](#15-nguồn-và-ghi-chú)
 
@@ -84,7 +84,7 @@ Chỉ Nginx publish cổng 80 ra host. PostgreSQL, Flask, Grafana, Prometheus, A
 | 2 | Viết Dockerfile | [app/Dockerfile](app/Dockerfile) |
 | 3 | Docker Compose, môi trường và Git ignore | [docker-compose.yml](docker-compose.yml), [.env.example](.env.example), [.gitignore](.gitignore) |
 | 4 | Cấu hình Nginx | [nginx/default.conf](nginx/default.conf) |
-| 5–7 | Tạo EC2, cài Docker, triển khai và kiểm tra | [scripts/setup-server.sh](scripts/setup-server.sh), minh chứng trong `docs/evidence/` |
+| 5–7 | Tạo EC2, cài Docker, triển khai và kiểm tra | [scripts/setup-server.sh](scripts/setup-server.sh), minh chứng trong `docs/evidence/week-1/` |
 | 8–9 | Sơ đồ kiến trúc và tài liệu | `docs/architecture.*`, README này |
 
 Điểm cần chứng minh khi demo tuần 1:
@@ -309,7 +309,7 @@ tests/
 docs/
   architecture.drawio
   architecture.png
-  evidence/
+  evidence/                   # Ảnh và video minh chứng, mỗi tuần một thư mục: week-1/, week-2/, week-3/
   offline-first.md
   production-sync.md
 .env.example
@@ -477,17 +477,17 @@ Các endpoint hoàn thành, lịch/metadata và phân loại được giữ đ�
 
 API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo và xoá nhóm, chưa hỗ trợ sửa tên. Xoá nhóm gỡ nhãn khỏi mọi công việc trong cùng giao dịch và lưu bản ghi xoá; khi migration chạy lại, nhóm đã xoá không tự được tạo lại.
 
-## 13. Minh chứng tuần 1 và tuần 2
+## 13. Minh chứng tuần 1, 2 và 3
 
 ### Tuần 1 — File đã lưu trong repo
 
 | Nội dung | Minh chứng |
 | --- | --- |
-| EC2 và Security Group | [EC2 Running](docs/evidence/ec2-running.png), [Security Group](docs/evidence/security-group.png) |
-| Docker và Compose | [Phiên bản Docker](docs/evidence/docker-version.png), [Container Up/healthy](docs/evidence/compose-up-ps.png) |
-| Health và giới hạn metrics | [Health/metrics](docs/evidence/health-metrics.png), [Truy cập health](docs/evidence/health-public-ip.png) |
-| Ứng dụng và dữ liệu | [Giao diện bản trước](docs/evidence/app-web.png), [Down/up giữ dữ liệu](docs/evidence/compose-down-up.png) |
-| Sơ đồ và video | [Sơ đồ PNG](docs/architecture.png), [File draw.io](docs/architecture.drawio), [Video demo](docs/evidence/demo.mp4) |
+| EC2 và Security Group | [EC2 Running](docs/evidence/week-1/ec2-running.png), [Security Group](docs/evidence/week-1/security-group.png) |
+| Docker và Compose | [Phiên bản Docker](docs/evidence/week-1/docker-version.png), [Container Up/healthy](docs/evidence/week-1/compose-up-ps.png) |
+| Health và giới hạn metrics | [Health/metrics](docs/evidence/week-1/health-metrics.png), [Truy cập health](docs/evidence/week-1/health-public-ip.png) |
+| Ứng dụng và dữ liệu | [Giao diện bản trước](docs/evidence/week-1/app-web.png), [Down/up giữ dữ liệu](docs/evidence/week-1/compose-down-up.png) |
+| Sơ đồ và video | [Sơ đồ PNG](docs/architecture.png), [File draw.io](docs/architecture.drawio), [Video demo](docs/evidence/week-1/demo.mp4) |
 
 Các ảnh/video trên thuộc bản triển khai trước. Chụp bổ sung khi cần chứng minh giao diện bonus hoặc trạng thái server sau bản cập nhật.
 
@@ -584,6 +584,114 @@ Hai ảnh ghi lại chu kỳ lỗi → revert trên **pull request**. Deploy tr�
 - Video push → pipeline → web cập nhật.
 
 Ảnh log triển khai và ảnh revert được gửi lặp lại chỉ hiển thị một lần, không tính thành các lần chạy khác nhau. Ảnh chụp phần README cũ là tài liệu tham chiếu, không dùng làm minh chứng CI/CD.
+
+### Tuần 3 — Minh chứng thực hiện
+
+Các ảnh dưới đây ghi lại tuần 3 trên EC2: Bước 1–5 chạy tối 02/11/2026, Bước 6–7 chạy tối 03/11/2026 (giờ Việt Nam); Bước 8 là biên bản sự cố trong repo. Ảnh được lưu tại [docs/evidence/week-3](docs/evidence/week-3/); mật khẩu, thanh địa chỉ AWS và địa chỉ IP public đã được cắt hoặc che.
+
+| Nội dung | Kết quả thể hiện trong ảnh |
+| --- | --- |
+| Bước 1 — Chuẩn bị server | `prepare-step1.sh` chạy tới `HOÀN TẤT BƯỚC 1`; `todo_app` chỉ có quyền đăng nhập, quyền DML đúng từng bảng, không có `TRUNCATE` và không tạo được bảng |
+| Bước 2 — Deploy | Job `deploy` in `Deploy OK: phiên bản cd7a9de (7/7 service sẵn sàng)`; đủ 7 container đang chạy |
+| Bước 3 — Grafana | Nguồn dữ liệu Prometheus truy vấn thành công; dashboard `Todo App` (App, Database `UP`) và `EC2 Server Resources` (CPU, RAM, ổ đĩa) |
+| Bước 4 — Cảnh báo Discord | Tắt app 22:12:54 → trang 502 và panel App `DOWN` → `[FIRING:1] AppDown` lúc 22:14 → bật lại 22:28:57 → `[RESOLVED] AppDown` lúc 22:29 |
+| Bước 5 — Log | Log Nginx có dòng `502` và `connect() failed (113: Host is unreachable)` lúc app tắt; container giữ log tối đa 3 file × 10 MB |
+| Bước 6 — Backup và restore | Trước backup có 13 việc, mã kiểm tra `2fe35952…`; xoá dữ liệu còn 0 việc; `restore.sh` chạy 6,2 giây; sau restore khớp lại 13 việc và đúng mã cũ |
+| Bước 7 — Firewall, SSH, secrets | UFW chỉ cho phép cổng 22 và 80; từ laptop cổng 80 mở, cổng 5432 và 3000 đóng; SSH `passwordauthentication no`; Git không chứa file bí mật; `todo_app` bị chặn khi `DROP`, `TRUNCATE`, `CREATE TABLE` |
+| Bước 8 — Biên bản sự cố | [docs/incidents/2026-11-02-app-down.md](docs/incidents/2026-11-02-app-down.md), ghi lại lần thử AppDown ở Bước 4 |
+
+<details>
+<summary>1. Bước 1 — Quyền của tài khoản todo_app</summary>
+
+![Bảng quyền của todo_app ở mục 6/6 và dòng HOÀN TẤT BƯỚC 1](docs/evidence/week-3/01-step1-todo-app-privileges.png)
+
+</details>
+
+<details>
+<summary>2. Bước 2 — Deploy và 7 container</summary>
+
+![Job deploy thành công, Deploy OK phiên bản cd7a9de](docs/evidence/week-3/02-step2-deploy-ok-cd7a9de.png)
+
+![Bảy container đang chạy trên EC2](docs/evidence/week-3/03-step2-compose-7-containers.png)
+
+</details>
+
+<details>
+<summary>3. Bước 3 — Grafana</summary>
+
+![Nguồn dữ liệu Prometheus truy vấn thành công](docs/evidence/week-3/04-step3-grafana-datasource-ok.png)
+
+![Dashboard Todo App: App và Database UP](docs/evidence/week-3/05-step3-dashboard-todo-app.png)
+
+![Dashboard EC2 Server Resources: CPU, RAM, ổ đĩa](docs/evidence/week-3/06-step3-dashboard-ec2-server-resources.png)
+
+</details>
+
+<details>
+<summary>4. Bước 4 — Thử cảnh báo AppDown qua Discord</summary>
+
+Khi app tắt, panel App chuyển `DOWN` và trang trả `502 Bad Gateway`. Panel Database báo `No data` vì số liệu này do chính app cung cấp.
+
+![Panel App DOWN trong Grafana](docs/evidence/week-3/07-step4-grafana-app-down.png)
+
+![Trang 502 Bad Gateway khi app tắt](docs/evidence/week-3/08-step4-nginx-502.png)
+
+Discord nhận `[FIRING:1] AppDown` lúc 22:14 và `[RESOLVED] AppDown` lúc 22:29:
+
+![Tin FIRING và RESOLVED trong kênh canh-bao](docs/evidence/week-3/09-step4-discord-firing-resolved.png)
+
+</details>
+
+<details>
+<summary>5. Bước 5 — Log</summary>
+
+Lệnh tắt, bật app và log Nginx có dòng 502 lúc app tắt:
+
+![Lệnh date, stop, start và log Nginx có 502](docs/evidence/week-3/10-step4-5-stop-start-nginx-502.png)
+
+Giờ bật lại của container app và cấu hình xoay vòng log:
+
+![docker inspect StartedAt và LogConfig max-size 10m](docs/evidence/week-3/11-step5-app-startedat-logconfig.png)
+
+</details>
+
+<details>
+<summary>6. Bước 6 — Backup và restore</summary>
+
+`db-check.sh` trước backup, sau khi xoá dữ liệu và sau restore; dòng `real` là thời gian restore:
+
+![db-check trước backup, sau khi xoá và sau restore khớp nhau](docs/evidence/week-3/12-step6-backup-restore.png)
+
+</details>
+
+<details>
+<summary>7. Bước 7 — Firewall, SSH và secrets</summary>
+
+UFW chỉ cho phép SSH (22) và HTTP (80):
+
+![ufw status verbose chỉ mở 22 và 80](docs/evidence/week-3/13-step7-ufw-status.png)
+
+Kiểm tra cổng từ laptop: cổng 80 mở, cổng 5432 (PostgreSQL) và 3000 (Grafana) đóng:
+
+![Test-NetConnection cổng 80 thành công](docs/evidence/week-3/14-step7-port-80-open.png)
+
+![Test-NetConnection cổng 5432 thất bại](docs/evidence/week-3/15-step7-port-5432-closed.png)
+
+![Test-NetConnection cổng 3000 thất bại](docs/evidence/week-3/16-step7-port-3000-closed.png)
+
+SSH chỉ cho đăng nhập bằng khoá:
+
+![sshd -T có passwordauthentication no](docs/evidence/week-3/17-step7-sshd-no-password.png)
+
+Lệnh kiểm tra Git không in dòng nào, nghĩa là repo không chứa `.env`, `secrets/` hay `backups/`:
+
+![git ls-files không có file bí mật](docs/evidence/week-3/18-step7-git-no-secrets.png)
+
+`todo_app` bị chặn khi xoá bảng, làm rỗng bảng và tạo bảng mới:
+
+![todo_app bị từ chối DROP, TRUNCATE và CREATE TABLE](docs/evidence/week-3/19-step7-todo-app-permission-denied.png)
+
+</details>
 
 ## 14. Xử lý sự cố
 
