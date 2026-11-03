@@ -165,7 +165,9 @@ Minh chứng CI/CD cần được ghi từ GitHub Actions và server thực tế
 
 ## 5. Tuần 3 — Phân quyền DB, giám sát và Grafana
 
-Phần này mô tả cấu hình mã nguồn đã chuẩn bị cho **Bước 1, Bước 2 và Bước 3** của tuần 3 (chưa bao gồm bài diễn tập cảnh báo Discord, backup/restore định kỳ, UFW hay biên bản sự cố của các bước sau; chưa ghi nhận kết quả chạy thực tế trên EC2 cho đến khi nhóm chạy nghiệm thu).
+Các mục 5.1–5.5 mô tả cấu hình mã nguồn cho **Bước 1, Bước 2 và Bước 3** của tuần 3.
+Các bước sau dùng: cảnh báo Discord và log (Bước 4–5) theo cấu hình ở `monitoring/` và `docker-compose.yml`; backup/restore (Bước 6) bằng `scripts/backup.sh`, `scripts/restore.sh`, `scripts/db-check.sh`; UFW, SSH và kiểm tra bí mật (Bước 7) làm trực tiếp trên EC2; biên bản sự cố (Bước 8) tại [docs/incidents/2026-11-02-app-down.md](docs/incidents/2026-11-02-app-down.md).
+Kết quả chạy thật trên EC2 của cả 8 bước có ảnh ở [mục 13](#13-minh-chứng-tuần-1-2-và-3).
 
 ### 5.1. Thứ tự bắt buộc khi nâng cấp server hiện có: Chuẩn bị Bước 1 trước, Merge/Deploy sau
 
@@ -302,6 +304,9 @@ scripts/
   setup-server.sh             # Bootstrap EC2 mới (tương thích tuần 3, yêu cầu webhook trước khi hoàn tất)
   prepare-step1.sh            # Chuẩn bị Bước 1 trên EC2 trước khi merge/deploy cấu hình tuần 3
   deploy.sh                   # Kiểm tra config → migrate quản trị → cấp quyền app → up 7 service → kiểm tra readiness
+  backup.sh                   # Sao lưu DB ra backups/todo-*.sql.gz, giữ 7 bản mới nhất
+  restore.sh                  # Khôi phục DB từ một file backup (ghi đè, hỏi xác nhận trước)
+  db-check.sh                 # In số việc và mã md5 của bảng todos để so trước/sau restore
 tests/
   test_app.py                 # Pytest tích hợp với PostgreSQL thật (admin migration + least-privilege app user)
   test_week3_config.py        # Pytest kiểm tra tĩnh cấu hình, dashboard provisioning và unit test metric
@@ -310,6 +315,7 @@ docs/
   architecture.drawio
   architecture.png
   evidence/                   # Ảnh và video minh chứng, mỗi tuần một thư mục: week-1/, week-2/, week-3/
+  incidents/                  # Biên bản sự cố
   offline-first.md
   production-sync.md
 .env.example
