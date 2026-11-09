@@ -140,12 +140,14 @@ Cuối cùng, truy cập website để xác nhận ứng dụng đã hoạt đ�
 
 ### 4.6. Ghi nhận kết quả
 
-- Ngày và giờ thực hiện: 2026-11-09
+- Ngày và giờ thực hiện: 2026-11-09.
 - Hiện tượng xảy ra: Sau khi chạy lệnh docker compose stop app, container ứng dụng devops-todo-app-1 chuyển sang trạng thái Stopped. Khi kiểm tra đường dẫn /health từ máy chủ EC2, hệ thống trả về lỗi HTTP 502 Bad Gateway.
 - Nguyên nhân: Container ứng dụng bị dừng nên Nginx không thể chuyển tiếp yêu cầu đến dịch vụ ứng dụng.
 - Thời điểm ghi nhận trong log: 15:28:10 UTC, ứng dụng nhận tín hiệu dừng (term).
 - Kết quả khôi phục: Chạy lệnh docker compose start app để khởi động lại container. Sau đó, container chuyển sang trạng thái Up và lệnh curl http://localhost/health trả về {"status":"ok"}.
-- Ảnh chứng minh: [cung cấp sau]
+- Ảnh chứng minh:
+    - Ảnh 1: Trạng thái container trước và sau khi dừng ứng dụng. [chưa cung cấp ảnh]
+    - Ảnh 2: Lỗi HTTP 502 và kết quả kiểm tra sau khi khôi phục. [chưa cung cấp ảnh]
 - Kết quả cuối cùng: Đã khôi phục thành công. Ứng dụng hoạt động trở lại và Health Check trả về trạng thái OK.
 
 ---
@@ -223,13 +225,15 @@ curl -i http://localhost/health
 
 ### 5.6. Ghi nhận kết quả
 
-- Ngày và giờ thực hiện: [Điền thời gian thực tế]
-- Hiện tượng xảy ra: [Ghi nhận kết quả thực tế]
-- Log lỗi cơ sở dữ liệu: [Bổ sung đường dẫn]
-- Thời gian phát hiện: [Điền số liệu]
-- Thời gian khôi phục: [Điền số liệu]
-- Ảnh và log minh chứng: [Bổ sung đường dẫn]
-- Kết quả khôi phục: [Đã xác nhận / Chưa xác nhận]
+- Ngày và giờ thực hiện: 09/11/2026.
+- Hiện tượng xảy ra: Sau khi thay đổi mật khẩu APP_DB_PASSWORD trong file .env thành giá trị không chính xác và tạo lại container ứng dụng, endpoint /health trả về HTTP 500 Internal Server Error với nội dung cannot connect to database.
+- Nguyên nhân: Mật khẩu ứng dụng sử dụng để xác thực với PostgreSQL không khớp với mật khẩu đã cấu hình cho user todo_app.
+- Bằng chứng từ log: PostgreSQL ghi nhận lỗi FATAL: password authentication failed for user "todo_app".
+- Cảnh báo giám sát: Hệ thống gửi cảnh báo Discord [FIRING:1] DatabaseDown app (app:8000 critical). Cảnh báo cho biết chỉ số todo_db_up bằng 0 liên tục trong 1 phút.  
+- Kết quả mô phỏng: Đã tạo thành công tình huống lỗi kết nối cơ sở dữ liệu và xác nhận hệ thống giám sát phát hiện được sự cố.
+- Kết quả mô phỏng: Đã tạo thành công tình huống lỗi kết nối cơ sở dữ liệu và xác nhận hệ thống giám sát phát hiện được sự cố.
+- Kết quả khôi phục: [chưa xác nhận]
+- Ảnh và log minh chứng: Ảnh lỗi HTTP 500, log PostgreSQL và thông báo Discord DatabaseDown. [chưa cung cấp ảnh]
 
 **Trạng thái hiện tại:** Đã thực hiện mô phỏng lỗi. Đang chờ khôi phục mật khẩu DB chính xác và xác nhận ứng dụng hoạt động trở lại.
 
