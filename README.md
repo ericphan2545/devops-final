@@ -5,7 +5,7 @@
 - **Repository:** [ericphan2545/devops-final](https://github.com/ericphan2545/devops-final)
 - **Địa chỉ triển khai của nhóm:** [todo-devops.duckdns.org](http://todo-devops.duckdns.org)
 - **Nhánh triển khai tự động:** `main`; thay đổi từ nhánh tính năng được kiểm tra qua pull request trước khi merge.
-- **Phạm vi đồ án:** tuần 1 — server và triển khai đầu tiên; tuần 2 — Docker và CI/CD; tuần 3 — phân quyền PostgreSQL tối thiểu cho app, tách migration sang bước quản trị và tích hợp bộ giám sát 7 service kèm provisioning Grafana. Giao diện mới, phân loại tuỳ chỉnh và offline-first là **phần bonus**, không thay thế yêu cầu của môn học.
+- **Phạm vi đồ án:** tuần 1 — server và triển khai đầu tiên; tuần 2 — Docker và CI/CD; tuần 3 — phân quyền PostgreSQL tối thiểu cho app, tách migration sang bước quản trị và tích hợp bộ giám sát 7 service kèm provisioning Grafana; tuần 4 — diễn tập sự cố, đo số liệu, hoàn thiện báo cáo, video và bảo vệ. Giao diện mới, phân loại tuỳ chỉnh và offline-first là **phần bonus**, không thay thế yêu cầu của môn học.
 
 ## Mục lục
 
@@ -14,25 +14,26 @@
 - [3. Tuần 1 — Server và triển khai đầu tiên](#3-tuần-1--server-và-triển-khai-đầu-tiên)
 - [4. Tuần 2 — Docker và CI/CD](#4-tuần-2--docker-và-cicd)
 - [5. Tuần 3 — Phân quyền DB, giám sát và Grafana](#5-tuần-3--phân-quyền-db-giám-sát-và-grafana)
-- [6. Phần bonus — Giao diện và quản lý công việc](#6-phần-bonus--giao-diện-và-quản-lý-công-việc)
-- [7. Cấu trúc repository](#7-cấu-trúc-repository)
-- [8. Chạy trên máy cá nhân](#8-chạy-trên-máy-cá-nhân)
-- [9. Triển khai EC2 và DuckDNS](#9-triển-khai-ec2-và-duckdns)
-- [10. Kiểm thử và kiểm tra vận hành](#10-kiểm-thử-và-kiểm-tra-vận-hành)
-- [11. Dữ liệu, migration và đồng bộ](#11-dữ-liệu-migration-và-đồng-bộ)
-- [12. Endpoint và form](#12-endpoint-và-form)
-- [13. Minh chứng tuần 1, 2 và 3](#13-minh-chứng-tuần-1-2-và-3)
-- [14. Xử lý sự cố](#14-xử-lý-sự-cố)
-- [15. Nguồn và ghi chú](#15-nguồn-và-ghi-chú)
+- [6. Tuần 4 — Demo, xử lý sự cố và đo số liệu](#6-tuần-4--demo-xử-lý-sự-cố-và-đo-số-liệu)
+- [7. Phần bonus — Giao diện và quản lý công việc](#7-phần-bonus--giao-diện-và-quản-lý-công-việc)
+- [8. Cấu trúc repository](#8-cấu-trúc-repository)
+- [9. Chạy trên máy cá nhân](#9-chạy-trên-máy-cá-nhân)
+- [10. Triển khai EC2 và DuckDNS](#10-triển-khai-ec2-và-duckdns)
+- [11. Kiểm thử và kiểm tra vận hành](#11-kiểm-thử-và-kiểm-tra-vận-hành)
+- [12. Dữ liệu, migration và đồng bộ](#12-dữ-liệu-migration-và-đồng-bộ)
+- [13. Endpoint và form](#13-endpoint-và-form)
+- [14. Minh chứng tuần 1, 2, 3 và 4](#14-minh-chứng-tuần-1-2-3-và-4)
+- [15. Xử lý sự cố](#15-xử-lý-sự-cố)
+- [16. Nguồn và ghi chú](#16-nguồn-và-ghi-chú)
 
 ## 1. Thành viên và phân công
 
-| Thành viên | MSSV | Nhiệm vụ tuần 1 | Nhiệm vụ tuần 2 | Nhiệm vụ tuần 3 |
-| --- | --- | --- | --- | --- |
-| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log |
-| **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) |
-| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo |
-| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB |
+| Thành viên | MSSV | Nhiệm vụ tuần 1 | Nhiệm vụ tuần 2 | Nhiệm vụ tuần 3 | Nhiệm vụ tuần 4 |
+| --- | --- | --- | --- | --- | --- |
+| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | — |
+| **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) | Script đo deploy; đo thời gian pipeline/gián đoạn ba lần, ghi minh chứng và cập nhật README |
+| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo | — |
+| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | — |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
 
@@ -167,7 +168,7 @@ Minh chứng CI/CD cần được ghi từ GitHub Actions và server thực tế
 
 Các mục 5.1–5.5 mô tả cấu hình mã nguồn cho **Bước 1, Bước 2 và Bước 3** của tuần 3.
 Các bước sau dùng: cảnh báo Discord và log (Bước 4–5) theo cấu hình ở `monitoring/` và `docker-compose.yml`; backup/restore (Bước 6) bằng `scripts/backup.sh`, `scripts/restore.sh`, `scripts/db-check.sh`; UFW, SSH và kiểm tra bí mật (Bước 7) làm trực tiếp trên EC2; biên bản sự cố (Bước 8) tại [docs/incidents/2026-11-02-app-down.md](docs/incidents/2026-11-02-app-down.md).
-Kết quả chạy thật trên EC2 của cả 8 bước có ảnh ở [mục 13](#13-minh-chứng-tuần-1-2-và-3).
+Kết quả chạy thật trên EC2 của cả 8 bước có ảnh ở [mục 14](#14-minh-chứng-tuần-1-2-3-và-4).
 
 ### 5.1. Thứ tự bắt buộc khi nâng cấp server hiện có: Chuẩn bị Bước 1 trước, Merge/Deploy sau
 
@@ -250,7 +251,181 @@ Khi merge nhánh tuần 3 vào `main`, GitHub Actions sẽ tự động SSH vào
 - [ ] **Bước 2 — Vận hành bằng user quyền hẹp:** `/health` trả `200`, `/metrics` qua Nginx trả `403`, thêm/xoá và đồng bộ công việc trên UI-basic hoạt động bình thường; `docker compose restart app` không chạy DDL và không báo lỗi `must be owner`; cấu hình log `json-file` `10m` × `3` được áp dụng.
 - [ ] **Bước 3 — Grafana Datasource & Dashboards:** Đăng nhập được `/grafana/`, datasource `Prometheus` (`uid: prometheus`) truy vấn thành công; có ảnh minh chứng dashboard **EC2 Server Resources** (CPU, RAM, ổ đĩa host) và dashboard **Todo App** (`App`, `Database`, `Request/giây`).
 
-## 6. Phần bonus — Giao diện và quản lý công việc
+## 6. Tuần 4 — Demo, xử lý sự cố và đo số liệu
+
+**Mục tiêu:** vận hành lại hệ thống đã làm ở tuần 1–3, diễn tập sự cố, đo kết quả và hoàn thiện hồ sơ bảo vệ. Tuần 4 không bổ sung công nghệ mới. Checkpoint 3,0 điểm: demo end-to-end 0,8; troubleshooting 0,8; báo cáo 0,6; bảo vệ 0,8.
+
+**Trạng thái:** đã chuẩn bị công cụ và hướng dẫn đo deploy cho **Ngô Tấn Đức**. Chưa ghi nhận ba lần đo deploy thực tế của tuần 4; bảng kết quả bên dưới chờ điền số liệu thật. Phân công tuần 4 của các thành viên còn lại chờ nhóm xác nhận.
+
+### 6.1. Nhiệm vụ và thứ tự thực hiện
+
+| Bước | Nội dung | Sản phẩm/minh chứng cần có |
+| --- | --- | --- |
+| 1 | Diễn tập app dừng, sai mật khẩu DB và Security Group chặn HTTP 80 | Playbook ít nhất ba mục; ảnh/log từng bước gây lỗi, quan sát, khoanh vùng và khôi phục; ngày/người thực hiện |
+| 2 | Đo số liệu cho báo cáo | Ba lần đo và trung bình cho các chỉ số trong yêu cầu; ghi CPU/RAM EC2. Ngô Tấn Đức phụ trách script và hai chỉ số pipeline/gián đoạn deploy |
+| 3 | Viết báo cáo | PDF 6–10 trang, gồm Abstract, Introduction, Architecture & Design, Implementation, Experiments & Evidence, Security/Reliability, Challenges, Conclusion và References |
+| 4 | Quay video end-to-end | Video 5–10 phút có phần giải thích của mọi thành viên; kịch bản đi từ code/pipeline tới vận hành, sự cố và khôi phục |
+| 5 | Tập bảo vệ và chốt hồ sơ | Mỗi người tự làm push–deploy, backup–restore và một sự cố; nhật ký đóng góp; kiểm tra server chính và dự phòng chạy đúng bản mới |
+
+Khi diễn tập, quan sát bằng cửa sổ ẩn danh mới hoặc curl để tránh bản trang offline che lỗi server. Ghi thời điểm trực tiếp khi thao tác. Với code hiện tại, sai mật khẩu DB làm trang chính trả 503, /health trả 500; app dừng làm panel Database mất dữ liệu. Kiểm tra vượt quyền dùng DROP, TRUNCATE và CREATE TABLE vì app có quyền UPDATE phục vụ đồng bộ.
+
+### 6.2. Hướng dẫn đo pipeline và gián đoạn deploy — Ngô Tấn Đức
+
+#### 6.2.1. Phạm vi và sản phẩm bàn giao
+
+**Phụ trách: Ngô Tấn Đức — MSSV 23090008.** Phần việc này gồm công cụ đo, ba lần đo pipeline/gián đoạn deploy và minh chứng cá nhân; bàn giao kết quả cho người tổng hợp báo cáo nhóm.
+
+- [scripts/measure-downtime.sh](scripts/measure-downtime.sh): lệnh Bash theo tên file đề yêu cầu.
+- [scripts/measure_downtime.py](scripts/measure_downtime.py): chương trình đo trực tiếp trên PowerShell.
+- Ba bộ CSV + JSON + TXT tại docs/evidence/week-4/measurements/.
+- Ba ảnh GitHub Actions có commit, trạng thái và Total duration.
+- Bảng kết quả ở mục 6.2.6 và đoạn nhận xét ở mục 6.2.7.
+
+Python đã có trong project. Công cụ dùng thư viện chuẩn, không cần pip hoặc công nghệ mới.
+Công cụ chỉ gửi GET đến /health; không SSH, đọc .env/secrets hay thay đổi server.
+
+#### 6.2.2. Chuẩn bị
+
+1. Chọn thời gian ba lần deploy cùng nhóm. Hoàn tất các diễn tập lỗi/restore trước khi đo.
+2. Chạy trên laptop Windows, trong PowerShell tại thư mục repo, không chạy trong phiên SSH.
+3. Xác nhận endpoint công khai đang khỏe:
+
+~~~powershell
+cd "C:\Users\ADMIN\Downloads\devops-final-git"
+py --version
+curl.exe -i http://todo-devops.duckdns.org/health
+~~~
+
+Endpoint cần trả HTTP 200 và JSON {"status":"ok"}.
+Đo URL công khai để kiểm tra đường truy cập từ laptop qua mạng, Nginx và app.
+Localhost trên laptop không đo EC2.
+
+#### 6.2.3. Lần đo 1
+
+##### Terminal A — Chạy công cụ đo
+
+~~~powershell
+py scripts/measure_downtime.py http://todo-devops.duckdns.org/health --run run-01
+~~~
+
+Nếu dùng Git Bash/Linux, lệnh tương đương:
+
+~~~bash
+bash scripts/measure-downtime.sh http://todo-devops.duckdns.org/health --run run-01
+~~~
+
+Chờ "Initial healthy baseline: YES" và các dấu chấm ổn định khoảng 10–15 giây.
+Giữ terminal A chạy suốt quá trình push, pipeline và kiểm tra bản mới.
+
+##### Terminal B — Đưa một thay đổi nhỏ qua quy trình Git của nhóm
+
+1. Thay một dòng chữ hiển thị trong app/templates/index.html để kiểm tra bản app mới sau deploy.
+2. Commit/push bằng nhánh và PR theo quy trình nhóm. Đợi PR test/build đạt rồi merge theo quyền được giao.
+3. Nếu main có bảo vệ, phối hợp người có quyền merge. Không tạo test lỗi trong lần đo deploy bình thường.
+
+Workflow hiện tại chỉ deploy khi có push/merge vào main.
+Lần chạy pull request chỉ test/build, không tính là lần deploy thật.
+
+Ghi lại:
+
+- SHA commit trên main thực sự được deploy (có thể khác SHA commit nhánh sau squash/merge).
+- Link đúng lần GitHub Actions, sự kiện push, nhánh main.
+- Total duration của toàn workflow, gồm thời gian test/build/deploy.
+- Dòng "Deploy OK: phiên bản ..." của job deploy.
+
+##### Khi deploy xong
+
+1. Xác nhận ba job xanh; SHA trong Deploy OK đúng commit đang đo.
+2. Mở web, tải lại và đối chiếu Phiên bản ở footer với SHA vừa triển khai.
+3. Kiểm tra dữ liệu có trước deploy vẫn còn. Chụp ảnh phiên bản và dữ liệu.
+4. Đợi terminal A khỏe ổn định thêm 10–15 giây, sau đó Ctrl+C.
+5. Mở file .summary.txt theo đường dẫn chương trình in ra, chụp kết quả terminal.
+6. Điền một dòng bảng tại mục 6.2.6.
+
+Giữ terminal A chạy trong lúc chờ pipeline. Kết thúc phép đo sau khi app hồi phục.
+
+#### 6.2.4. Lần đo 2 và 3
+
+Lặp lại toàn bộ mục 6.2.3 với hai thay đổi nhỏ hợp lệ và hai lần deploy khác nhau:
+
+~~~powershell
+py scripts/measure_downtime.py http://todo-devops.duckdns.org/health --run run-02
+~~~
+
+~~~powershell
+py scripts/measure_downtime.py http://todo-devops.duckdns.org/health --run run-03
+~~~
+
+Mỗi lần có workflow, commit và bộ minh chứng riêng.
+Không đổi tên cùng một bộ số đo thành ba lần. Các file có timestamp UTC và hậu tố riêng để tránh ghi đè.
+
+#### 6.2.5. Đọc kết quả đúng
+
+- COMPLETE: có baseline ban đầu khỏe và không kết thúc giữa một đợt lỗi.
+  COMPLETE không tự chứng minh deploy thành công; vẫn kiểm tra job deploy và phiên bản web.
+- Healthy: HTTP 200 và body JSON có status=ok.
+  Redirect, lỗi HTTP, timeout, JSON không hợp lệ hay status=error đều là mẫu không khỏe.
+- Observed interruption window: từ lúc bắt đầu request lỗi đầu tiên đến lúc hoàn tất response
+  khỏe đầu tiên sau đó, cộng các đợt đã hồi phục. Đây là cửa sổ gián đoạn quan sát từ client,
+  không phải downtime chính xác của server hoặc cận trên/cận dưới của downtime.
+- Interval 0,5 giây là khoảng nghỉ SAU response; mỗi vòng còn mất thời gian request.
+  Timeout áp dụng cho thao tác chờ mạng, không phải giới hạn tổng thời gian chạy chương trình.
+- Thời lượng dùng đồng hồ monotonic. CSV ghi UTC; giờ Việt Nam = UTC+7.
+- Không có mẫu lỗi: ghi "Không quan sát thấy gián đoạn trong lần đo", giá trị quan sát 0.
+  Không kết luận zero-downtime: lỗi ngắn có thể nằm giữa hai lần kiểm tra.
+- INCOMPLETE: điền "Chưa xác định"; không điền 0 vào bảng. Xử lý nguyên nhân rồi đo lại.
+- Mất mạng laptop cũng tạo mẫu lỗi: ghi nguyên nhân, loại lần đo không hợp lệ khỏi trung bình.
+- Không mở .env, secrets hoặc giá trị secret khi chụp minh chứng.
+
+Có thể dùng --samples 5 để kiểm tra nhanh công cụ; cách này không thay thế một lần đo deploy đầy đủ.
+Tùy chọn --duration giới hạn thời gian đo; mặc định chương trình chạy đến khi Ctrl+C.
+
+#### 6.2.6. Bảng bàn giao — điền số đo thật
+
+| Lần | SHA main | Link Actions | Total duration (giây) | Gián đoạn quan sát (giây) | COMPLETE + deploy xanh + SHA đúng? | File dữ liệu và ảnh |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Chưa đo | Chưa có | Chưa đo | Chưa đo | Chưa kiểm tra | Chưa có |
+| 2 | Chưa đo | Chưa có | Chưa đo | Chưa đo | Chưa kiểm tra | Chưa có |
+| 3 | Chưa đo | Chưa có | Chưa đo | Chưa đo | Chưa kiểm tra | Chưa có |
+
+- Đổi Total duration về giây, rồi tính (lần 1 + lần 2 + lần 3) / 3.
+- Chỉ tính trung bình gián đoạn của ba lần hợp lệ, theo dõi hết deploy và đã hồi phục.
+- Ghi rõ phiên bản công cụ, interval, timeout, thời gian đo và đường dẫn file bằng chứng.
+- Không ghi lại ba số 69 giây của tuần 2 như thể đó là ba lần deploy mới của tuần 4.
+- Ngô Tấn Đức bàn giao kết quả đo cá nhân cho người tổng hợp báo cáo nhóm.
+
+#### 6.2.7. Đoạn báo cáo — điền sau khi đo
+
+"Nhóm đo ba lần triển khai hợp lệ từ nhánh main. Một chương trình trên laptop gửi GET
+đến endpoint công khai /health, ghi trạng thái HTTP, nội dung health và thời gian phản hồi.
+Pipeline trung bình mất [điền] giây theo Total duration của GitHub Actions.
+Cửa sổ gián đoạn quan sát trung bình là [điền] giây. Cách đo phụ thuộc thời gian request
+và khoảng nghỉ 0,5 giây, nên đây là số đo quan sát từ client.
+Sau deploy, nhóm đối chiếu mã phiên bản và kiểm tra dữ liệu cũ còn nguyên."
+
+Nếu cả ba lần không có lỗi, dùng:
+"Không quan sát thấy gián đoạn trong ba cửa sổ đo; kết quả này không chứng minh downtime tuyệt đối bằng 0."
+
+#### 6.2.8. Checklist cá nhân
+
+- [ ] Script/hướng dẫn được review, commit/push theo nhánh nhóm.
+- [ ] Ba lần deploy main khác nhau, mỗi lần có baseline khỏe và kết thúc sau hồi phục.
+- [ ] Có CSV, JSON, TXT, ảnh workflow, ảnh phiên bản/dữ liệu web cho từng lần.
+- [ ] Bảng mục 6.2.6 điền số đo thật; đơn vị và trung bình được kiểm tra.
+- [ ] Viết đoạn giải thích cách đo, kết quả và giới hạn.
+- [ ] Quay đoạn trình bày phần cá nhân; bàn giao cho người tổng hợp báo cáo nhóm.
+- [ ] Tự tập phần bảo vệ chung: push/deploy, backup/restore và một sự cố.
+
+Nếu rà minh chứng CI/CD tuần 2, chỉ ghi nhận ảnh/log hiện có và liệt kê phần cần bổ sung.
+
+#### 6.2.9. Nguồn giải thích phương pháp
+
+- Đồng hồ monotonic để đo khoảng thời gian: [Python time.monotonic](https://docs.python.org/3.12/library/time.html#time.monotonic)
+- Timeout của thao tác mạng urllib: [Python urllib.request.urlopen](https://docs.python.org/3.12/library/urllib.request.html#urllib.request.urlopen)
+
+Các kết quả HTTP giả lập dùng để kiểm thử công cụ không phải số đo EC2 và không được điền vào bảng mục 6.2.6.
+
+## 7. Phần bonus — Giao diện và quản lý công việc
 
 **Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Giao diện hiện tại dùng bố cục trong `todo-clean.zip`: một cột giữa màn hình, nền sáng, màu nhấn xanh, responsive và không dùng thư viện/CDN. Phần này không thay thế nhiệm vụ tuần 1–2.
 
@@ -265,7 +440,7 @@ Sidebar, lịch, ưu tiên, tiến độ, phân loại và đánh dấu hoàn th
 
 Ứng dụng dùng danh sách chung, chưa có tài khoản riêng. Bản Flask gọi API thật, lưu PostgreSQL. Bản HTML xem thử là bản cục bộ riêng và ghi rõ lưu trên thiết bị, không kết nối EC2.
 
-## 7. Cấu trúc repository
+## 8. Cấu trúc repository
 
 ```text
 .github/workflows/ci-cd.yml   # test → build → deploy (chỉ deploy khi push main)
@@ -307,6 +482,8 @@ scripts/
   backup.sh                   # Sao lưu DB ra backups/todo-*.sql.gz, giữ 7 bản mới nhất
   restore.sh                  # Khôi phục DB từ một file backup (ghi đè, hỏi xác nhận trước)
   db-check.sh                 # In số việc và mã md5 của bảng todos để so trước/sau restore
+  measure-downtime.sh          # Lệnh Bash gọi công cụ đo gián đoạn deploy tuần 4
+  measure_downtime.py          # Đo /health từ laptop, lưu CSV/JSON/TXT
 tests/
   test_app.py                 # Pytest tích hợp với PostgreSQL thật (admin migration + least-privilege app user)
   test_week3_config.py        # Pytest kiểm tra tĩnh cấu hình, dashboard provisioning và unit test metric
@@ -314,10 +491,11 @@ tests/
 docs/
   architecture.drawio
   architecture.png
-  evidence/                   # Ảnh và video minh chứng, mỗi tuần một thư mục: week-1/, week-2/, week-3/
+  evidence/                   # Minh chứng week-1/, week-2/, week-3/; week-4/ được bổ sung khi diễn tập/đo
   incidents/                  # Biên bản sự cố
   offline-first.md
   production-sync.md
+  week-4-person-2.md           # Liên kết tới hướng dẫn đo tuần 4 tại README mục 6.2
 .env.example
 .gitattributes
 .gitignore
@@ -327,7 +505,7 @@ requirements-dev.txt
 README.md
 ```
 
-## 8. Chạy trên máy cá nhân
+## 9. Chạy trên máy cá nhân
 
 Cần Git, Docker Engine và Docker Compose plugin. Trên Windows, dùng Docker Desktop với Linux containers.
 
@@ -359,7 +537,7 @@ docker compose ps
 
 Mở [http://localhost](http://localhost) cho ứng dụng Todo và [http://localhost/grafana/](http://localhost/grafana/) cho Grafana.
 
-## 9. Triển khai EC2 và DuckDNS
+## 10. Triển khai EC2 và DuckDNS
 
 ### Dựng server mới bằng User data
 
@@ -385,7 +563,7 @@ bash scripts/deploy.sh
 
 Nếu server có thay đổi cục bộ, xử lý chúng trước khi pull; không ghi đè hoặc reset mù. Trong CI, workflow chỉ gọi `bash scripts/deploy.sh` (không gọi script tương tác `prepare-step1.sh`).
 
-## 10. Kiểm thử và kiểm tra vận hành
+## 11. Kiểm thử và kiểm tra vận hành
 
 ### Kiểm tra hệ thống trên server chạy Compose
 
@@ -437,7 +615,7 @@ DB_HOST=localhost PGPORT=55432 DB_NAME=todo_test DB_USER=todo DB_PASSWORD=testpa
 
 Fixture kiểm thử dùng tài khoản quản trị tạo schema ngẫu nhiên riêng, chạy migration, tạo role ứng dụng quyền hẹp tạm thời cho phiên test để thực thi toàn bộ API/form/metric dưới quyền hẹp, rồi thu dọn schema và role khi kết thúc.
 
-## 11. Dữ liệu, migration và đồng bộ
+## 12. Dữ liệu, migration và đồng bộ
 
 ### Phân biệt dựng database mới và nâng cấp volume `db-data` cũ
 
@@ -461,7 +639,7 @@ Chỉ xoá thao tác khỏi hàng đợi sau xác nhận hợp lệ. Xoá thắn
 
 Chi tiết: [docs/offline-first.md](docs/offline-first.md) và [docs/production-sync.md](docs/production-sync.md).
 
-## 12. Endpoint và form
+## 13. Endpoint và form
 
 | Endpoint | Vai trò |
 | --- | --- |
@@ -483,7 +661,7 @@ Các endpoint hoàn thành, lịch/metadata và phân loại được giữ đ�
 
 API, health và endpoint Service Worker dùng `Cache-Control: no-store`. Một `op_id` dùng lại với payload khác nhận HTTP 409. Tên phân loại được chuẩn hoá khi kiểm tra trùng; server trả ID nhóm đã có nếu hai thiết bị tạo cùng tên. Client cập nhật ID nhóm trong các thao tác chưa gửi trước khi tiếp tục đồng bộ. Phiên bản này hỗ trợ tạo và xoá nhóm, chưa hỗ trợ sửa tên. Xoá nhóm gỡ nhãn khỏi mọi công việc trong cùng giao dịch và lưu bản ghi xoá; khi migration chạy lại, nhóm đã xoá không tự được tạo lại.
 
-## 13. Minh chứng tuần 1, 2 và 3
+## 14. Minh chứng tuần 1, 2, 3 và 4
 
 ### Tuần 1 — File đã lưu trong repo
 
@@ -699,7 +877,19 @@ Lệnh kiểm tra Git không in dòng nào, nghĩa là repo không chứa `.env`
 
 </details>
 
-## 14. Xử lý sự cố
+### Tuần 4 — Minh chứng chờ bổ sung
+
+**Chưa có ba lần đo deploy thực tế được ghi nhận.** Công cụ đo đã được chuẩn bị; kết quả HTTP giả lập chỉ kiểm thử công cụ, không phải số liệu triển khai EC2.
+
+| Nội dung | Minh chứng cần bổ sung |
+| --- | --- |
+| Phần đo của Ngô Tấn Đức | Ba bộ CSV/JSON/TXT tại docs/evidence/week-4/measurements/; ba workflow push main có SHA, Total duration và job deploy xanh; ảnh phiên bản web và dữ liệu sau deploy |
+| Kết quả và nhận xét | Điền bảng ở mục 6.2.6, tính trung bình ba lần hợp lệ và ghi giới hạn phép đo |
+| Các phần còn lại của nhóm | Playbook ba tình huống, số đo phát hiện/khôi phục/restore, ảnh CPU/RAM, báo cáo PDF, video và nhật ký đóng góp |
+
+Chỉ bổ sung liên kết ảnh/log/video sau khi đã có file hoặc URL thật. Các minh chứng tuần 1–3 ở trên được giữ theo thời điểm thực hiện, không tính lại thành các lần đo mới của tuần 4.
+
+## 15. Xử lý sự cố
 
 | Triệu chứng | Kiểm tra và cách xử lý |
 | --- | --- |
@@ -719,7 +909,7 @@ Lệnh kiểm tra Git không in dòng nào, nghĩa là repo không chứa `.env`
 | Pipeline đỏ ở health/monitoring | Đọc thông báo giai đoạn `[a/g]`–`[g/g]` của `scripts/deploy.sh` và log service tương ứng |
 | UI báo chưa đồng bộ | Kiểm tra `/health`, `/api/tasks` và trạng thái cuối trang; giữ hàng đợi để gửi lại |
 
-## 15. Nguồn và ghi chú
+## 16. Nguồn và ghi chú
 
 App mẫu ban đầu được xây dựng với hỗ trợ AI (Claude); phần giao diện, đồng bộ và tài liệu có hỗ trợ AI (Codex). Nhóm kiểm tra, hiểu mã nguồn và chịu trách nhiệm với bản nộp. Phân công cá nhân ở mục 1 ghi theo đóng góp nhóm xác nhận.
 
