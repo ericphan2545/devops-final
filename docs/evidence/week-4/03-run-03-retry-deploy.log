@@ -1,0 +1,232 @@
+Mon, 09 Nov 2026 12:21:59 GMT
+Run set -eu
+Mon, 09 Nov 2026 12:22:00 GMT
+Warning: Permanently added '***' (ED25519) to the list of known hosts.
+Mon, 09 Nov 2026 12:22:03 GMT
+From https://github.com/ericphan2545/devops-final
+Mon, 09 Nov 2026 12:22:03 GMT
+ * branch            main       -> FETCH_HEAD
+Mon, 09 Nov 2026 12:22:03 GMT
+   0aa4d7f..64e3ff5  main       -> origin/main
+Mon, 09 Nov 2026 12:22:03 GMT
+Updating 0aa4d7f..64e3ff5
+Mon, 09 Nov 2026 12:22:03 GMT
+Fast-forward
+Mon, 09 Nov 2026 12:22:03 GMT
+ docs/week-4-run-03.md | 2 ++
+Mon, 09 Nov 2026 12:22:03 GMT
+ 1 file changed, 2 insertions(+)
+Mon, 09 Nov 2026 12:22:03 GMT
+[a/g] Kiểm tra biến môi trường bắt buộc và cấu hình hệ thống...
+Mon, 09 Nov 2026 12:22:03 GMT
+ Container devops-todo-prometheus-run-da0baebeadd0 Creating 
+Mon, 09 Nov 2026 12:22:03 GMT
+ Container devops-todo-prometheus-run-da0baebeadd0 Created 
+Mon, 09 Nov 2026 12:22:04 GMT
+Checking /etc/prometheus/prometheus.yml
+Mon, 09 Nov 2026 12:22:04 GMT
+  SUCCESS: 1 rule files found
+Mon, 09 Nov 2026 12:22:04 GMT
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+Mon, 09 Nov 2026 12:22:04 GMT
+
+Mon, 09 Nov 2026 12:22:04 GMT
+Checking /etc/prometheus/alerts.yml
+Mon, 09 Nov 2026 12:22:04 GMT
+  SUCCESS: 3 rules found
+Mon, 09 Nov 2026 12:22:04 GMT
+
+Mon, 09 Nov 2026 12:22:04 GMT
+ Container devops-todo-alertmanager-run-38f296b651ee Creating 
+Mon, 09 Nov 2026 12:22:04 GMT
+ Container devops-todo-alertmanager-run-38f296b651ee Created 
+Mon, 09 Nov 2026 12:22:04 GMT
+Checking '/etc/alertmanager/alertmanager.yml'  SUCCESS
+Mon, 09 Nov 2026 12:22:04 GMT
+Found:
+Mon, 09 Nov 2026 12:22:04 GMT
+ - global config
+Mon, 09 Nov 2026 12:22:04 GMT
+ - route
+Mon, 09 Nov 2026 12:22:04 GMT
+ - 0 inhibit rules
+Mon, 09 Nov 2026 12:22:04 GMT
+ - 1 receivers
+Mon, 09 Nov 2026 12:22:04 GMT
+ - 0 templates
+Mon, 09 Nov 2026 12:22:04 GMT
+
+Mon, 09 Nov 2026 12:22:05 GMT
+ Container devops-todo-alertmanager-run-b4d1a98f810c Creating 
+Mon, 09 Nov 2026 12:22:05 GMT
+ Container devops-todo-alertmanager-run-b4d1a98f810c Created 
+Mon, 09 Nov 2026 12:22:05 GMT
+[b/g] Build image app và bảo đảm PostgreSQL sẵn sàng...
+Mon, 09 Nov 2026 12:22:05 GMT
+ Image devops-todo-app Building 
+Mon, 09 Nov 2026 12:22:06 GMT
+#1 [internal] load local bake definitions
+Mon, 09 Nov 2026 12:22:06 GMT
+#1 reading from stdin 504B done
+Mon, 09 Nov 2026 12:22:06 GMT
+#1 DONE 0.0s
+Mon, 09 Nov 2026 12:22:06 GMT
+
+Mon, 09 Nov 2026 12:22:06 GMT
+#2 [internal] load build definition from Dockerfile
+Mon, 09 Nov 2026 12:22:06 GMT
+#2 transferring dockerfile: 250B 0.0s done
+Mon, 09 Nov 2026 12:22:06 GMT
+#2 DONE 0.0s
+Mon, 09 Nov 2026 12:22:06 GMT
+
+Mon, 09 Nov 2026 12:22:06 GMT
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+Mon, 09 Nov 2026 12:22:07 GMT
+#3 DONE 1.0s
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#4 [internal] load .dockerignore
+Mon, 09 Nov 2026 12:22:07 GMT
+#4 transferring context: 87B done
+Mon, 09 Nov 2026 12:22:07 GMT
+#4 DONE 0.0s
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#5 [1/6] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+Mon, 09 Nov 2026 12:22:07 GMT
+#5 resolve docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b 0.0s done
+Mon, 09 Nov 2026 12:22:07 GMT
+#5 DONE 0.0s
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#6 [internal] load build context
+Mon, 09 Nov 2026 12:22:07 GMT
+#6 transferring context: 459B done
+Mon, 09 Nov 2026 12:22:07 GMT
+#6 DONE 0.0s
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#7 [2/6] WORKDIR /app
+Mon, 09 Nov 2026 12:22:07 GMT
+#7 CACHED
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#8 [3/6] COPY requirements.txt .
+Mon, 09 Nov 2026 12:22:07 GMT
+#8 CACHED
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#9 [4/6] RUN pip install --no-cache-dir -r requirements.txt
+Mon, 09 Nov 2026 12:22:07 GMT
+#9 CACHED
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#10 [5/6] COPY . .
+Mon, 09 Nov 2026 12:22:07 GMT
+#10 CACHED
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#11 [6/6] RUN useradd --create-home appuser
+Mon, 09 Nov 2026 12:22:07 GMT
+#11 CACHED
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting to image
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting layers done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting manifest sha256:38e4a1a0a4cc0dc119ab5c0127ce3b233918832f413ac380305eb37a4ebbafcf done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting config sha256:caa6f534722f7d9df923433ae01eb804df6ad53eb38ba85deaa213274a45275d done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting attestation manifest sha256:7edce122ac41f7e62c6053977701a7abab39d5ae33e7620df3073f62302fbb99 0.0s done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting manifest list sha256:1d1b8d8c90019aeb1615aa46f80b383a0c9c1fae5894b82e0fb147063fabd670
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 exporting manifest list sha256:1d1b8d8c90019aeb1615aa46f80b383a0c9c1fae5894b82e0fb147063fabd670 0.0s done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 naming to docker.io/library/devops-todo-app:latest done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 unpacking to docker.io/library/devops-todo-app:latest done
+Mon, 09 Nov 2026 12:22:07 GMT
+#12 DONE 0.1s
+Mon, 09 Nov 2026 12:22:07 GMT
+
+Mon, 09 Nov 2026 12:22:07 GMT
+#13 resolving provenance for metadata file
+Mon, 09 Nov 2026 12:22:07 GMT
+#13 DONE 0.0s
+Mon, 09 Nov 2026 12:22:07 GMT
+ Image devops-todo-app Built 
+Mon, 09 Nov 2026 12:22:07 GMT
+ Container devops-todo-db-1 Running 
+Mon, 09 Nov 2026 12:22:08 GMT
+[c/g] Chạy migration một lần bằng tài khoản quản trị...
+Mon, 09 Nov 2026 12:22:08 GMT
+ Container devops-todo-app-run-3a69e50d966c Creating 
+Mon, 09 Nov 2026 12:22:08 GMT
+ Container devops-todo-app-run-3a69e50d966c Created 
+Mon, 09 Nov 2026 12:22:08 GMT
+Schema ready; existing data preserved.
+Mon, 09 Nov 2026 12:22:09 GMT
+[d/g] Cấp quyền tối thiểu cho tài khoản ứng dụng (todo_app)...
+Mon, 09 Nov 2026 12:22:09 GMT
+ ?column? 
+Mon, 09 Nov 2026 12:22:09 GMT
+----------
+Mon, 09 Nov 2026 12:22:09 GMT
+        1
+Mon, 09 Nov 2026 12:22:09 GMT
+(1 row)
+Mon, 09 Nov 2026 12:22:09 GMT
+
+Mon, 09 Nov 2026 12:22:09 GMT
+Configured least-privilege role 'todo_app' on database 'todo' (schema 'public').
+Mon, 09 Nov 2026 12:22:09 GMT
+[e/g] Khởi động/cập nhật 7 service (app chạy bằng todo_app)...
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-alertmanager-1 Running 
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-node-exporter-1 Running 
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-grafana-1 Running 
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-nginx-1 Running 
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-db-1 Running 
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-prometheus-1 Running 
+Mon, 09 Nov 2026 12:22:09 GMT
+ Container devops-todo-app-1 Recreate 
+Mon, 09 Nov 2026 12:22:10 GMT
+ Container devops-todo-app-1 Recreated 
+Mon, 09 Nov 2026 12:22:10 GMT
+ Container devops-todo-db-1 Waiting 
+Mon, 09 Nov 2026 12:22:10 GMT
+ Container devops-todo-db-1 Healthy 
+Mon, 09 Nov 2026 12:22:10 GMT
+ Container devops-todo-app-1 Starting 
+Mon, 09 Nov 2026 12:22:10 GMT
+ Container devops-todo-app-1 Started 
+Mon, 09 Nov 2026 12:22:10 GMT
+[f/g] Kiểm tra cấu hình Nginx (nginx -t) rồi nạp lại...
+Mon, 09 Nov 2026 12:22:11 GMT
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Mon, 09 Nov 2026 12:22:11 GMT
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+Mon, 09 Nov 2026 12:22:11 GMT
+2026/11/09 12:22:11 [notice] 211#211: signal process started
+Mon, 09 Nov 2026 12:22:11 GMT
+[g/g] Chờ /health, API và xác nhận các thành phần giám sát sẵn sàng & nạp cấu hình mới...
+Mon, 09 Nov 2026 12:22:12 GMT
+Deploy OK: phiên bản 64e3ff5 (7/7 service sẵn sàng)
