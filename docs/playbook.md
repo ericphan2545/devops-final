@@ -357,9 +357,9 @@ Sau đó, thành viên số 1:
 
 | Tình huống | Mô phỏng | Khôi phục | Trạng thái |
 |---|---|---|---|
-| Container ứng dụng bị dừng | Đã thực hiện | Đã xác nhận | Hoàn thành, cần bổ sung ảnh |
-| Sai mật khẩu DB | Đã thực hiện | Chưa xác nhận | Chờ khôi phục và kiểm tra |
-| Chặn cổng HTTP 80 | Chưa thực hiện | Chưa thực hiện | Chờ phối hợp với Eric |
+| Container ứng dụng bị dừng | Đã thực hiện | Đã xác nhận | Hoàn thành |
+| Sai mật khẩu DB | Đã thực hiện | Đã xác nhận | Hoàn thành |
+| Chặn cổng HTTP 80 | Đã thực hiện | Đã xác nhận | Hoàn thành |
 
 ## 8. Bài học kinh nghiệm
 
