@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net" agent="ChatGPT">
+  <diagram name="Final 7-service architecture" id="final-7-services">
+    <mxGraphModel dx="1548" dy="918" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=14;spacing=8;" value="User / Browser" vertex="1">
+          <mxGeometry height="65" width="190" x="70" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="github" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=14;spacing=8;" value="GitHub Repository&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Source code&lt;/font&gt;" vertex="1">
+          <mxGeometry height="65" width="220" x="420" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="developer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=14;spacing=8;" value="Development Team" vertex="1">
+          <mxGeometry height="65" width="200" x="820" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="sg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e5;strokeColor=#c58b35;fontSize=14;spacing=8;" value="AWS Security Group&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Inbound: HTTP 80, SSH 22&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="260" x="70" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="ec2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;fontSize=17;spacing=8;verticalAlign=top;spacingTop=14;dashed=0;" value="AWS EC2 Instance — Ubuntu 24.04&lt;br&gt;&lt;font style=&#39;font-size:12px&#39;&gt;Docker Compose deployment · Public HTTP entry via Nginx&lt;/font&gt;" vertex="1">
+          <mxGeometry height="720" width="970" x="360" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="network" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;fontSize=15;spacing=8;verticalAlign=top;spacingTop=12;dashed=1;" value="Docker Compose Network — internal service communication" vertex="1">
+          <mxGeometry height="570" width="910" x="390" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="nginx" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=14;spacing=8;" value="1. Nginx :80&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Reverse proxy&lt;br&gt;Public HTTP entry&lt;br&gt;/grafana/ route&lt;/font&gt;" vertex="1">
+          <mxGeometry height="115" width="190" x="430" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="app" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=14;spacing=8;" value="2. Flask / Gunicorn :8000&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Todo application&lt;br&gt;/health · /metrics&lt;br&gt;No public port&lt;/font&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="700" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="db" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#3564a0;fontSize=14;spacing=8;" value="3. PostgreSQL 17 :5432&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Application database&lt;br&gt;No public port&lt;/font&gt;" vertex="1">
+          <mxGeometry height="115" width="220" x="1010" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="volume" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#64748b;fontSize=13;spacing=8;" value="Persistent volume: db-data&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Database storage&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="220" x="1010" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="node" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f7ee;strokeColor=#39845a;fontSize=13;spacing=8;" value="4. Node Exporter :9100&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;EC2 host metrics&lt;br&gt;CPU · RAM · Disk&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="190" x="430" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f7ee;strokeColor=#39845a;fontSize=13;spacing=8;" value="5. Prometheus :9090&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Scrapes application&lt;br&gt;and host metrics&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="220" x="700" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f7ee;strokeColor=#39845a;fontSize=13;spacing=8;" value="6. Grafana :3000&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Monitoring dashboards&lt;br&gt;Access via Nginx /grafana/&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="220" x="1010" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="alert" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e5;strokeColor=#c58b35;fontSize=13;spacing=8;" value="7. Alertmanager :9093&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Receives alerts&lt;br&gt;Routes notifications&lt;/font&gt;" vertex="1">
+          <mxGeometry height="65" width="220" x="700" y="745" as="geometry" />
+        </mxCell>
+        <mxCell id="discord" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f4efff;strokeColor=#8064a2;fontSize=13;spacing=8;" value="Discord&lt;br&gt;&lt;font style=&#39;font-size:11px&#39;&gt;Alert notifications&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="220" x="1010" y="755" as="geometry" />
+        </mxCell>
+        <mxCell id="u_sg" edge="1" parent="1" source="user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;" target="sg" value="HTTP request">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sg_nginx" edge="1" parent="1" source="sg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;" target="nginx" value="HTTP :80">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_git" edge="1" parent="1" source="developer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;" target="github" value="git push">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="git_ec2" edge="1" parent="1" source="github" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" target="ec2" value="CI/CD deploy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_ec2" edge="1" parent="1" source="developer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" target="ec2" value="SSH :22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nginx_app" edge="1" parent="1" source="nginx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;" target="app" value="HTTP :8000">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="app_db" edge="1" parent="1" source="app" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;" target="db" value="SQL :5432">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="db_vol" edge="1" parent="1" source="db" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#64748b;labelBackgroundColor=#ffffff;" target="volume" value="Persistent data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="app_prom" edge="1" parent="1" source="prom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#39845a;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" target="app" value="Scrape /metrics">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="node_prom" edge="1" parent="1" source="prom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#39845a;labelBackgroundColor=#ffffff;" target="node" value="Scrape :9100">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="prom_grafana" edge="1" parent="1" source="grafana" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#39845a;labelBackgroundColor=#ffffff;" target="prom" value="Query data source">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="prom_alert" edge="1" parent="1" source="prom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#c58b35;labelBackgroundColor=#ffffff;" target="alert" value="Alert rules">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="alert_discord" edge="1" parent="1" source="alert" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#8064a2;labelBackgroundColor=#ffffff;" target="discord" value="Notifications">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nginx_grafana" edge="1" parent="1" source="nginx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;fontSize=12;strokeColor=#39845a;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" target="grafana" value="/grafana/">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffbea;strokeColor=#c58b35;fontSize=12;spacing=8;align=center;" value="Security note: PostgreSQL and monitoring ports are internal to the Docker network; do not expose them directly to the Internet. SSH access is restricted by the Security Group." vertex="1">
+          <mxGeometry height="45" width="1260" x="70" y="885" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
