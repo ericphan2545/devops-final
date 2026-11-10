@@ -1,0 +1,159 @@
+{
+  "review_date": "2026-11-09",
+  "reviewer": "Codex; read-only verification of supplied evidence",
+  "script_sha256": "a4783aebc003b606f73b8f29b19c4ed01143581cf7ade0b1cebea58cccd9f6ad",
+  "measurements_unchanged_sha256": {
+    "check-20261109T105510Z-e16401.csv": "4804eb5a191d33e52ad41dd294b939efcd67d3cc1a50816e298a1f0964fc6f7b",
+    "check-20261109T105510Z-e16401.summary.json": "b12ffda8db12156c47d32135ab9923d37810070ad2cdbe527cc569e01743b731",
+    "check-20261109T105510Z-e16401.summary.txt": "fbff56ad02663f6e303c8670fd5280e696ddb02c68f4b251d320000e33b31ec6",
+    "run-01-20261109T110053Z-64f03d.csv": "9e8d5dde5e3dc15e457df9da0e7e15a7dd2a28b83336f1c26403ea5c1731f9ff",
+    "run-01-20261109T110053Z-64f03d.summary.json": "238c8be0c8ce26bd7d8041c236081fd284e050e89794fccab839137b5638c9cf",
+    "run-01-20261109T110053Z-64f03d.summary.txt": "e3a7e95ce9edd264e93bc8ec6b4f1f56100c846cf38ef83fb44ca44e34af6efc",
+    "run-01-retry-20261109T122601Z-8f4b74.csv": "0379ef597b66133f5c912f3bd452180bac1ce329042126ad909191ef724d462f",
+    "run-01-retry-20261109T122601Z-8f4b74.summary.json": "e35a5f5e07868420d7e9efbf97f66e621364f3f5bc3fca6f13736c5f2b231258",
+    "run-01-retry-20261109T122601Z-8f4b74.summary.txt": "fd194abc3cbcf7d6ce292e28836b85e82ee12fe8fa6e6ea2ce81c1566f6ae2dd",
+    "run-02-20261109T113227Z-398773.csv": "5fbde4dcff50824577e985f3f134f3153bc9d810d7e3da95114dad0e6dea457b",
+    "run-02-20261109T113227Z-398773.summary.json": "ccfaec6bdf4a5ebaab168b97f4bfca73e22a14a3dec4c11cdd90625da8fa54ad",
+    "run-02-20261109T113227Z-398773.summary.txt": "6263c25e4e14662349b2f35bed9d78dcf4bda4eddb94cf7ef4ddf5c4e94f717f",
+    "run-03-20261109T120435Z-23efb7.csv": "462aad8664a3cb2e024cdaeb66e7c8556a5c6c1f9c8a0367c4bf4b4e7d07f677",
+    "run-03-20261109T120435Z-23efb7.summary.json": "170ab94080e14fb858a75bfd406062303556fd99e3738125d345aba17de4fe80",
+    "run-03-20261109T120435Z-23efb7.summary.txt": "475e21523faa0900fc02a649ac66030e446eee439a122d6f03c70ada2d0c4f82",
+    "run-03-retry-20261109T121854Z-937bd6.csv": "e9f36cdccf72cb0dcab5a4cbfb9d04e212710bfb3361879355471d6f8b13d114",
+    "run-03-retry-20261109T121854Z-937bd6.summary.json": "53aad7480db086f75af0d5ff75527d0a7de1501235a5a0bd686128adddfc92f4",
+    "run-03-retry-20261109T121854Z-937bd6.summary.txt": "d92379de3d791f4ff50eecb87e902ff222f18748da959b55a4e70c68b78f96a1"
+  },
+  "runs": [
+    {
+      "run": "run-01-retry",
+      "commit": "3095e0a",
+      "workflow_run": 66,
+      "actions_url": "https://github.com/ericphan2545/devops-final/actions/runs/42617331817",
+      "pipeline_seconds": 84,
+      "interruption_seconds": 12.375,
+      "checks": 251,
+      "healthy": 246,
+      "failed": 5,
+      "started_utc": "2026-11-09T12:26:01.898+00:00",
+      "finished_utc": "2026-11-09T12:30:26.444+00:00",
+      "deploy_recreate_utc": "2026-11-09T12:29:49+00:00",
+      "deploy_ok_utc": "2026-11-09T12:30:03+00:00",
+      "healthy_samples_after_deploy": 21,
+      "clock_note": "Recorded after Windows synchronization and SSH clock comparison.",
+      "source_json": "docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.summary.json",
+      "csv_sha256": "0379ef597b66133f5c912f3bd452180bac1ce329042126ad909191ef724d462f",
+      "assets": {
+        "pipeline": "docs/evidence/week-4/01-run-01-retry-pipeline.png",
+        "measurement": "docs/evidence/week-4/01-run-01-retry-measurement.png",
+        "log": "docs/evidence/week-4/01-run-01-retry-deploy.log"
+      }
+    },
+    {
+      "run": "run-02",
+      "commit": "2869d1d",
+      "workflow_run": 60,
+      "actions_url": "https://github.com/ericphan2545/devops-final/actions/runs/42610803949",
+      "pipeline_seconds": 70,
+      "interruption_seconds": 0,
+      "checks": 1793,
+      "healthy": 1793,
+      "failed": 0,
+      "started_utc": "2026-11-09T11:32:27.435+00:00",
+      "finished_utc": "2026-11-09T12:03:01.120+00:00",
+      "deploy_recreate_utc": "2026-11-09T11:40:52+00:00",
+      "deploy_ok_utc": "2026-11-09T11:40:54+00:00",
+      "healthy_samples_after_deploy": 1295,
+      "clock_note": "Recorded before clock correction; long continuous window covers deployment despite roughly two-minute skew. No wall-clock correction applied.",
+      "source_json": "docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.summary.json",
+      "csv_sha256": "5fbde4dcff50824577e985f3f134f3153bc9d810d7e3da95114dad0e6dea457b",
+      "assets": {
+        "pipeline": "docs/evidence/week-4/02-run-02-pipeline.png",
+        "measurement": "docs/evidence/week-4/02-run-02-measurement.png",
+        "log": "docs/evidence/week-4/02-run-02-deploy.log"
+      }
+    },
+    {
+      "run": "run-03-retry",
+      "commit": "64e3ff5",
+      "workflow_run": 64,
+      "actions_url": "https://github.com/ericphan2545/devops-final/actions/runs/42616283577",
+      "pipeline_seconds": 67,
+      "interruption_seconds": 0,
+      "checks": 223,
+      "healthy": 223,
+      "failed": 0,
+      "started_utc": "2026-11-09T12:18:54.396+00:00",
+      "finished_utc": "2026-11-09T12:22:43.565+00:00",
+      "deploy_recreate_utc": "2026-11-09T12:22:09+00:00",
+      "deploy_ok_utc": "2026-11-09T12:22:12+00:00",
+      "healthy_samples_after_deploy": 31,
+      "clock_note": "Recorded after Windows synchronization and SSH clock comparison.",
+      "source_json": "docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.json",
+      "csv_sha256": "e9f36cdccf72cb0dcab5a4cbfb9d04e212710bfb3361879355471d6f8b13d114",
+      "assets": {
+        "pipeline": "docs/evidence/week-4/03-run-03-retry-pipeline.png",
+        "measurement": "docs/evidence/week-4/03-run-03-retry-measurement.png",
+        "log": "docs/evidence/week-4/03-run-03-retry-deploy.log"
+      }
+    }
+  ],
+  "assets": [
+    {
+      "path": "docs/evidence/week-4/01-run-01-retry-pipeline.png",
+      "sha256": "fb67cdca2635ccd96bda90f71eed7093e3099420bbcc3e3beedbc6750797992f"
+    },
+    {
+      "path": "docs/evidence/week-4/01-run-01-retry-measurement.png",
+      "sha256": "f9e3ba4675f16a846b342fc1f29a427c167368744e9b6611f86b7c05f3fc04ff"
+    },
+    {
+      "path": "docs/evidence/week-4/01-run-01-retry-deploy.log",
+      "sha256": "36046814ebf912e67cd33b0a2ac5b743f7bdb93f39dc0097d149721b8dff7621"
+    },
+    {
+      "path": "docs/evidence/week-4/02-run-02-pipeline.png",
+      "sha256": "d8ff0710e7a02779545ee0f35e683e8658b6b746bd8dd795a4ce1735b8667378"
+    },
+    {
+      "path": "docs/evidence/week-4/02-run-02-measurement.png",
+      "sha256": "4bcc1869440fab7b5fbf266de0e3fc57867cac9b165281dbd065711f7aaa5c6b"
+    },
+    {
+      "path": "docs/evidence/week-4/02-run-02-deploy.log",
+      "sha256": "86c3401542a6e68d4a78f791fa9356fa8eb8eb686fdc72b15e2daa58bc74057c"
+    },
+    {
+      "path": "docs/evidence/week-4/03-run-03-retry-pipeline.png",
+      "sha256": "ef1e06eec4c8f6f74c7561577a465184bf6968300dda0c78eed46a946ac32f2f"
+    },
+    {
+      "path": "docs/evidence/week-4/03-run-03-retry-measurement.png",
+      "sha256": "54f0af47d06b19c73d20fecb8c30c5399e59b06937082230aad9a73fc5b93c2e"
+    },
+    {
+      "path": "docs/evidence/week-4/03-run-03-retry-deploy.log",
+      "sha256": "64352ff6d7eb0a5e0659e1bf6bb28cfafa8e5a275ee30c57f6de2cfb759a0a5e"
+    },
+    {
+      "path": "docs/evidence/week-4/04-windows-ec2-clock-check.png",
+      "sha256": "60cb2fc1784dee1418017750646a8ce85aa88ffff2f6df2fad3b861f7080e040"
+    }
+  ],
+  "averages": {
+    "pipeline_seconds": 73.666667,
+    "interruption_seconds": 4.125
+  },
+  "excluded": [
+    {
+      "run": "run-01",
+      "reason": "Clock skew and uncorrelated episodes; retained unchanged, excluded from reported mean."
+    },
+    {
+      "run": "run-03",
+      "reason": "Clock skew prevented reliable deployment correlation; retained unchanged, excluded from reported mean."
+    },
+    {
+      "run": "check",
+      "reason": "Five-sample tool smoke check, not a deployment trial."
+    }
+  ]
+}

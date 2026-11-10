@@ -162,8 +162,9 @@ curl -i http://localhost/health
 - **Khôi phục:** Chạy `docker compose start app`. Container chuyển sang trạng thái Up và Health Check trả về `{"status":"ok"}`.
 - **Kết quả cuối cùng:** Đã khôi phục thành công, ứng dụng hoạt động trở lại.
 
-**Minh chứng cần bổ sung:**
-- docs\evidence\week-4\incidents\incident-01-app-down
+**Minh chứng:**
+- [Ảnh dừng, khôi phục và cảnh báo](evidence/week-4/incidents/incident-01-app-down/).
+- [Biên bản và mốc đã đối chiếu](incidents/2026-11-09-app-down.md).
 
 ---
 
@@ -256,10 +257,11 @@ curl -i http://localhost/health
 - **Cảnh báo giám sát:** Discord Alert Bot gửi cảnh báo `[FIRING:1] DatabaseDown` khi chỉ số `todo_db_up` bằng 0 liên tục trong 1 phút.
 - **Khôi phục:** Đã phối hợp với thành viên Eric để khôi phục cấu hình mật khẩu database.
 - **Cảnh báo sau khôi phục:** Discord ghi nhận trạng thái `[RESOLVED] DatabaseDown`.
-- **Kết quả cuối cùng:** Đã ghi nhận quá trình phát hiện và giải quyết sự cố. Cần xác nhận lại Health Check và trạng thái website sau khôi phục.
+- **Kết quả cuối cùng:** Ảnh kiểm tra sau khôi phục xác nhận HTTP 200, status=ok lúc 10:56:45 UTC ngày 10/11/2026. Chưa đủ mốc đối chiếu để tính thời gian cảnh báo/phục hồi chính xác.
 
 **Minh chứng:**
-- docs\evidence\week-4\incidents\incident-02-database-down
+- [Ảnh lỗi, Discord và HTTP 200 sau khôi phục](evidence/week-4/incidents/incident-02-database-down/).
+- [Biên bản kết nối database](incidents/2026-11-09-database-down.md).
 
 ---
 
@@ -349,7 +351,8 @@ Sau đó, thành viên số 1:
 - **Kết quả khôi phục:** Cần xác nhận lại khả năng truy cập website từ bên ngoài sau khi khôi phục.
 
 **Minh chứng:**
-- docs\evidence\week-4\incidents\incident-03-port-80
+- [Ảnh timeout bên ngoài và HTTP 200 nội bộ](evidence/week-4/incidents/incident-03-port-80/).
+- [Biên bản HTTP 80](incidents/2026-11-10-http-80-blocked.md).
 
 ---
 
@@ -357,9 +360,9 @@ Sau đó, thành viên số 1:
 
 | Tình huống | Mô phỏng | Khôi phục | Trạng thái |
 |---|---|---|---|
-| Container ứng dụng bị dừng | Đã thực hiện | Đã xác nhận | Hoàn thành |
-| Sai mật khẩu DB | Đã thực hiện | Đã xác nhận | Hoàn thành |
-| Chặn cổng HTTP 80 | Đã thực hiện | Đã xác nhận | Hoàn thành |
+| Container ứng dụng bị dừng | Đã thực hiện | Đã xác nhận status=ok | Có ảnh dừng/khôi phục; thiếu mốc cảnh báo/phục hồi chính xác |
+| Sai mật khẩu DB | Đã thực hiện | Đã có ảnh HTTP 200 sau khôi phục | Có ảnh lỗi/Discord/phục hồi; chưa tính thời gian khi mốc chưa khớp |
+| Chặn cổng HTTP 80 | Đã thực hiện | Chờ ảnh xác nhận truy cập bên ngoài sau khôi phục | Có ảnh timeout bên ngoài và HTTP 200 nội bộ |
 
 ## 8. Bài học kinh nghiệm
 
@@ -371,18 +374,16 @@ Qua các tình huống diễn tập, nhóm có thể đánh giá một số khí
 - **Khoanh vùng sự cố:** Cần phân biệt lỗi ứng dụng, lỗi cơ sở dữ liệu và lỗi kết nối mạng để lựa chọn phương án khắc phục phù hợp.
 - **Thu thập bằng chứng:** Log, ảnh chụp màn hình và kết quả Health Check giúp xác nhận nguyên nhân cũng như trạng thái sau khi khôi phục.
 
-Phần đánh giá cuối cùng sẽ được cập nhật sau khi hoàn thành cả ba tình huống.
+Cả ba tình huống đã có ảnh diễn tập. Các mốc thời gian được ghi theo ảnh nguồn trong biên bản; không tính số liệu khi thiếu bằng chứng đối chiếu.
 
 ---
 
-## 9. Danh sách công việc còn lại
+## 9. Hoàn thiện minh chứng
 
-- [ ] Bổ sung ảnh và log cho tình huống App Down.
-- [ ] Khôi phục cấu hình DB ban đầu và xác nhận Health Check trả HTTP 200.
-- [ ] Bổ sung ảnh lỗi DB, log PostgreSQL và cảnh báo Discord.
-- [ ] Phối hợp với Eric thực hiện tình huống chặn cổng HTTP 80.
-- [ ] Bổ sung ảnh Security Group trước và sau khi khôi phục.
-- [ ] Ghi nhận thời gian và kết quả thực tế của từng tình huống.
-- [ ] Hoàn thiện phần bài học kinh nghiệm sau khi có đủ kết quả.
+- [x] Lưu ảnh dừng và khởi động lại app, kết quả Health Check và hai trạng thái cảnh báo AppDown.
+- [x] Lưu ảnh lỗi xác thực DB, cảnh báo DatabaseDown và HTTP 200 sau khôi phục.
+- [x] Lưu ảnh timeout bên ngoài khi chặn HTTP 80 và HTTP 200 nội bộ trên EC2.
+- [ ] Bổ sung ảnh Security Group sau khi mở lại HTTP 80 và kết quả truy cập từ bên ngoài.
+- [ ] Ghi đầy đủ ngày/múi giờ Discord, giờ thao tác khôi phục để tính các thời lượng còn thiếu.
 
-**Kết luận:** Playbook đã có quy trình xử lý cho cả ba tình huống. Tuy nhiên, tình huống sai mật khẩu DB chưa xác nhận khôi phục và tình huống chặn cổng HTTP 80 chưa được diễn tập. Tài liệu sẽ được cập nhật sau khi hoàn thành các bước còn thiếu và thu thập đầy đủ minh chứng.
+**Kết luận:** Playbook có quy trình và bằng chứng diễn tập cho cả ba sự cố; app và kết nối DB đã có bằng chứng phục hồi. Cần xác nhận truy cập bên ngoài sau khi mở HTTP 80 và bổ sung các mốc còn thiếu trước khi chốt số liệu thời gian.

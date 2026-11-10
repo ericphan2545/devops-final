@@ -1,0 +1,30 @@
+{
+  "run": "run-03",
+  "url": "http://todo-devops.duckdns.org/health",
+  "started_utc": "2026-11-09T12:04:35.490+00:00",
+  "finished_utc": "2026-11-09T12:11:15.360+00:00",
+  "monitor_elapsed_s": 399.875,
+  "interval_after_response_s": 0.5,
+  "network_timeout_s": 2,
+  "checks": 389,
+  "healthy_checks": 388,
+  "failed_checks": 1,
+  "initial_baseline_ok": true,
+  "status": "COMPLETE",
+  "observed_downtime_s": 3.25,
+  "closed_observation_windows_s": 3.25,
+  "episodes": [
+    {
+      "first_failure_utc": "2026-11-09T12:10:12.013+00:00",
+      "first_failure_elapsed_s": 336.5309999999954,
+      "healthy_before": true,
+      "failed_checks": 1,
+      "last_failure_utc": "2026-11-09T12:10:14.264+00:00",
+      "recovered_utc": "2026-11-09T12:10:15.263+00:00",
+      "observed_window_s": 3.25,
+      "recovered": true
+    }
+  ],
+  "interpretation": "Estimated client-observed window: first failed request START to first subsequent healthy response END, summed across recovered episodes. Includes request latency/timeouts and sampling effects; not exact server downtime or an outage bound. No failures means no interruption observed, not proof of zero downtime. COMPLETE describes this monitor recording, not GitHub Actions/deployment success. Record pipeline status separately.",
+  "csv_file": "run-03-20261109T120435Z-23efb7.csv"
+}

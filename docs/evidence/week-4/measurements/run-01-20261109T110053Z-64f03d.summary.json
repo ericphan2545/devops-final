@@ -1,0 +1,50 @@
+{
+  "run": "run-01",
+  "url": "http://todo-devops.duckdns.org/health",
+  "started_utc": "2026-11-09T11:00:53.973+00:00",
+  "finished_utc": "2026-11-09T11:20:47.956+00:00",
+  "monitor_elapsed_s": 1193.985,
+  "interval_after_response_s": 0.5,
+  "network_timeout_s": 2,
+  "checks": 1146,
+  "healthy_checks": 1140,
+  "failed_checks": 6,
+  "initial_baseline_ok": true,
+  "status": "COMPLETE",
+  "observed_downtime_s": 21.578,
+  "closed_observation_windows_s": 21.578,
+  "episodes": [
+    {
+      "first_failure_utc": "2026-11-09T11:08:45.168+00:00",
+      "first_failure_elapsed_s": 471.20300000000134,
+      "healthy_before": true,
+      "failed_checks": 4,
+      "last_failure_utc": "2026-11-09T11:08:55.597+00:00",
+      "recovered_utc": "2026-11-09T11:08:58.107+00:00",
+      "observed_window_s": 12.938,
+      "recovered": true
+    },
+    {
+      "first_failure_utc": "2026-11-09T11:09:55.980+00:00",
+      "first_failure_elapsed_s": 542.0160000000033,
+      "healthy_before": true,
+      "failed_checks": 1,
+      "last_failure_utc": "2026-11-09T11:09:58.617+00:00",
+      "recovered_utc": "2026-11-09T11:09:59.632+00:00",
+      "observed_window_s": 3.64,
+      "recovered": true
+    },
+    {
+      "first_failure_utc": "2026-11-09T11:14:57.296+00:00",
+      "first_failure_elapsed_s": 843.3280000000013,
+      "healthy_before": true,
+      "failed_checks": 1,
+      "last_failure_utc": "2026-11-09T11:15:00.967+00:00",
+      "recovered_utc": "2026-11-09T11:15:02.303+00:00",
+      "observed_window_s": 5.0,
+      "recovered": true
+    }
+  ],
+  "interpretation": "Estimated client-observed window: first failed request START to first subsequent healthy response END, summed across recovered episodes. Includes request latency/timeouts and sampling effects; not exact server downtime or an outage bound. No failures means no interruption observed, not proof of zero downtime. COMPLETE describes this monitor recording, not GitHub Actions/deployment success. Record pipeline status separately.",
+  "csv_file": "run-01-20261109T110053Z-64f03d.csv"
+}

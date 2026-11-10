@@ -7,21 +7,22 @@
 
 ## Diễn biến
 
-| Giờ (UTC+7) | Việc xảy ra | Nguồn |
+| Giờ Việt Nam (UTC+7) | Việc xảy ra | Nguồn |
 |---|---|---|
-| 2026-11-10 19:45:36 | Eric xóa quy tắc inbound HTTP TCP 80 | --- |
-| 2026-11-10 19:45:55 | Truy cập website từ trình duyệt bị `ERR_CONNECTION_TIMED_OUT` | [Ảnh trình duyệt](docs\evidence\week-4\incidents\incident-03-port-80\01-delete-rule-http-tcp-80.png) |
-| 2026-11-10 19:46:05 | `curl.exe` từ máy cá nhân timeout sau khoảng 10 giây | [Ảnh PowerShell](docs\evidence\week-4\incidents\incident-03-port-80\01-delete-rule-http-tcp-80.png) |
-| 2026-11-10 19:47:21 | Health Check nội bộ trên EC2 trả HTTP 200 | [Ảnh terminal](docs\evidence\week-4\incidents\incident-03-port-80\02-check-docker-and-health-check.png) |
-| Chưa ghi nhận | Discord không gửi cảnh báo cho tình huống này | --- |
+| Chưa có giờ chính xác | Eric chặn inbound HTTP TCP 80 trong Security Group | Thao tác diễn tập của nhóm |
+| Khoảng 19:48 theo đồng hồ máy chụp | Trình duyệt báo ERR_CONNECTION_TIMED_OUT; curl.exe timeout sau khoảng 10 giây | [Ảnh truy cập bên ngoài bị timeout](../evidence/week-4/incidents/incident-03-port-80/01-delete-rule-http-tcp-80.png) |
+| 2026-11-10 19:47:21 | /health nội bộ trả HTTP 200, status=ok; Date header ghi 12:47:21 GMT | [Ảnh Health Check nội bộ HTTP 200](../evidence/week-4/incidents/incident-03-port-80/02-check-docker-and-health-check.png) |
+| Chưa có mốc kiểm chứng | Eric thêm lại rule HTTP 80; cần ảnh truy cập bên ngoài sau khôi phục | Phối hợp trong nhóm |
+
+Giữ riêng giờ máy chụp và Date header server; không lấy chúng để suy ra thời điểm xóa/mở rule. Tình huống chỉ chặn kết nối bên ngoài nên không kỳ vọng cảnh báo AppDown/DatabaseDown từ giám sát nội bộ.
 
 ## Số liệu
 
 | Chỉ số | Mốc | Thời gian |
 |---|---|---|
-| Từ lúc chặn cổng đến lúc ghi nhận lỗi bên ngoài | 19:45:36 → 19:45:55 | Khoảng 19 giây |
-| Thời gian từ lúc chặn cổng đến Health Check | 19:45:36 → 19:47:21 | Khoảng 1 phút 45 giây |
-| Thời gian từ lúc chặn HTTP đến lúc khôi phục | 19:47:21 → 19:53:32 | Khoảng 6 phút 11 giây |
+| Từ lúc chặn cổng đến lúc ghi nhận lỗi bên ngoài | Chưa có giờ chính xác lúc xóa rule | Chưa tính |
+| Thời gian website bên ngoài không truy cập được | Chưa ghi nhận đầy đủ hai mốc | Chưa tính |
+| Health Check nội bộ | 19:47:21 | HTTP 200 |
 | Discord FIRING/RESOLVED | Không có | Không áp dụng |
 
 ## Phát hiện
@@ -77,4 +78,4 @@ curl -i http://localhost/health
 - Cần ghi lại thời gian Eric xóa và khôi phục rule để tính chính xác thời gian gián đoạn.
 - Bổ sung ảnh Security Group sau khi khôi phục và kết quả truy cập website HTTP 200 từ bên ngoài.
 
-**Kết luận:** Đã mô phỏng thành công tình huống chặn cổng HTTP 80. Website bên ngoài bị timeout trong khi Health Check nội bộ vẫn trả HTTP 200. Nhóm xác nhận tình huống này không gửi Discord alert.
+**Kết luận:** Đã mô phỏng thành công tình huống chặn cổng HTTP 80. Website bên ngoài bị timeout trong khi Health Check nội bộ vẫn trả HTTP 200. Nhóm xác nhận tình huống này không gửi Discord alert. Cần bổ sung bằng chứng truy cập bên ngoài sau khi khôi phục rule để xác nhận hoàn tất toàn bộ quá trình.

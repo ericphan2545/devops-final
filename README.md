@@ -30,10 +30,10 @@
 
 | Thành viên | MSSV | Nhiệm vụ tuần 1 | Nhiệm vụ tuần 2 | Nhiệm vụ tuần 3 | Nhiệm vụ tuần 4 |
 | --- | --- | --- | --- | --- | --- |
-| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | — |
+| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | Phối hợp diễn tập sự cố: khôi phục DB ở sự cố 2, thao tác Security Group chặn/mở cổng 80 ở sự cố 3; merge PR tuần 4 (#37, #39, #40) và hợp nhất README; tổng hợp báo cáo PDF, dựng video demo, hoàn thiện README và hồ sơ nộp |
 | **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) | Script đo deploy; đo thời gian pipeline/gián đoạn ba lần, ghi minh chứng và cập nhật README |
 | **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo | Thực hiện ba tình huống sự cố, Thu thập bằng chứng, Viết Playbook và biên bản sự cố, Cập nhật kiến trúc hệ thống, Phối hợp với các thành viên |
-| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | — |
+| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | Đo thực nghiệm Restore DB 3 lần (MD5 `55ed9488...`, TB 0.277s); diễn tập Sự cố 2 (sai mật khẩu DB); rà soát bảo mật UFW, SSH, Git Secrets, phân quyền hẹp `todo_app` và viết Báo cáo Paper Sec/Rel |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
 
@@ -253,181 +253,161 @@ Khi merge nhánh tuần 3 vào `main`, GitHub Actions sẽ tự động SSH vào
 
 ## 6. Tuần 4 — Demo, xử lý sự cố và đo số liệu
 
-**Mục tiêu:** vận hành lại hệ thống đã làm ở tuần 1–3, diễn tập sự cố, đo kết quả và hoàn thiện hồ sơ bảo vệ. Tuần 4 không bổ sung công nghệ mới. Checkpoint 3,0 điểm: demo end-to-end 0,8; troubleshooting 0,8; báo cáo 0,6; bảo vệ 0,8.
+Đã bổ sung công cụ đo và thực hiện **ba lần kiểm tra triển khai trên EC2 ngày 09/11/2026**. Mỗi lần có commit riêng trên `main`, pipeline `test → build → deploy`, dữ liệu CSV/JSON/TXT, ảnh GitHub Actions và log deploy.
 
-**Trạng thái:** đã chuẩn bị công cụ và hướng dẫn đo deploy cho **Ngô Tấn Đức**. Chưa ghi nhận ba lần đo deploy thực tế của tuần 4; bảng kết quả bên dưới chờ điền số liệu thật. Phân công tuần 4 của các thành viên còn lại chờ nhóm xác nhận.
+### 6.1. Hướng dẫn đo pipeline và gián đoạn deploy — Ngô Tấn Đức
 
-### 6.1. Nhiệm vụ và thứ tự thực hiện
+**Phụ trách: Ngô Tấn Đức — MSSV 23090008.**
 
-| Bước | Nội dung | Sản phẩm/minh chứng cần có |
-| --- | --- | --- |
-| 1 | Diễn tập app dừng, sai mật khẩu DB và Security Group chặn HTTP 80 | Playbook ít nhất ba mục; ảnh/log từng bước gây lỗi, quan sát, khoanh vùng và khôi phục; ngày/người thực hiện |
-| 2 | Đo số liệu cho báo cáo | Ba lần đo và trung bình cho các chỉ số trong yêu cầu; ghi CPU/RAM EC2. Ngô Tấn Đức phụ trách script và hai chỉ số pipeline/gián đoạn deploy |
-| 3 | Viết báo cáo | PDF 6–10 trang, gồm Abstract, Introduction, Architecture & Design, Implementation, Experiments & Evidence, Security/Reliability, Challenges, Conclusion và References |
-| 4 | Quay video end-to-end | Video 5–10 phút có phần giải thích của mọi thành viên; kịch bản đi từ code/pipeline tới vận hành, sự cố và khôi phục |
-| 5 | Tập bảo vệ và chốt hồ sơ | Mỗi người tự làm push–deploy, backup–restore và một sự cố; nhật ký đóng góp; kiểm tra server chính và dự phòng chạy đúng bản mới |
+**Công cụ:** [measure_downtime.py](scripts/measure_downtime.py) chạy trên PowerShell; [measure-downtime.sh](scripts/measure-downtime.sh) là lệnh Bash gọi cùng chương trình Python. Công cụ dùng thư viện chuẩn, gửi GET tới `http://todo-devops.duckdns.org/health` để quan sát đường truy cập từ laptop qua Nginx tới app và PostgreSQL.
 
-Khi diễn tập, quan sát bằng cửa sổ ẩn danh mới hoặc curl để tránh bản trang offline che lỗi server. Ghi thời điểm trực tiếp khi thao tác. Với code hiện tại, sai mật khẩu DB làm trang chính trả 503, /health trả 500; app dừng làm panel Database mất dữ liệu. Kiểm tra vượt quyền dùng DROP, TRUNCATE và CREATE TABLE vì app có quyền UPDATE phục vụ đồng bộ.
+- Mẫu khỏe: HTTP **200** và JSON **status=ok**.
+- Khoảng nghỉ sau mỗi response: **0,5 giây**; timeout thao tác mạng: **2 giây**.
+- Gián đoạn quan sát: từ lúc bắt đầu request lỗi đầu tiên đến khi nhận xong response khỏe đầu tiên sau đó; cộng các đợt đã phục hồi.
+- Thời gian pipeline lấy từ **Total duration** của workflow GitHub Actions trên `main`.
 
-### 6.2. Hướng dẫn đo pipeline và gián đoạn deploy — Ngô Tấn Đức
+**Quy trình kiểm tra:**
 
-#### 6.2.1. Phạm vi và sản phẩm bàn giao
+1. Chạy công cụ trên laptop trước khi deploy, xác nhận **Initial healthy baseline: YES**.
+2. Commit/push một thay đổi nhỏ qua PR, chờ test/build đạt rồi merge vào `main` để kích hoạt deploy thật.
+3. Giữ công cụ chạy xuyên suốt pipeline; xác nhận cả ba job xanh và log có **Deploy OK** đúng SHA, đủ **7/7 service sẵn sàng**.
+4. Tiếp tục quan sát các request khỏe sau deploy, bấm Ctrl+C để lưu CSV, JSON và TXT.
+5. Đối chiếu mốc app tạo lại/khởi động trong log với các mẫu lỗi/phục hồi; ghi kết quả và tính trung bình ba lần.
 
-**Phụ trách: Ngô Tấn Đức — MSSV 23090008.** Phần việc này gồm công cụ đo, ba lần đo pipeline/gián đoạn deploy và minh chứng cá nhân; bàn giao kết quả cho người tổng hợp báo cáo nhóm.
+Các lần bên dưới dùng thay đổi tài liệu để kích hoạt pipeline. App vẫn được tạo lại với `APP_VERSION` tương ứng SHA mới. Thời gian trong phần chi tiết là **UTC, ngày 09/11/2026**.
 
-- [scripts/measure-downtime.sh](scripts/measure-downtime.sh): lệnh Bash theo tên file đề yêu cầu.
-- [scripts/measure_downtime.py](scripts/measure_downtime.py): chương trình đo trực tiếp trên PowerShell.
-- Ba bộ CSV + JSON + TXT tại docs/evidence/week-4/measurements/.
-- Ba ảnh GitHub Actions có commit, trạng thái và Total duration.
-- Bảng kết quả ở mục 6.2.6 và đoạn nhận xét ở mục 6.2.7.
+### 6.2. Kết quả ba lần triển khai
 
-Python đã có trong project. Công cụ dùng thư viện chuẩn, không cần pip hoặc công nghệ mới.
-Công cụ chỉ gửi GET đến /health; không SSH, đọc .env/secrets hay thay đổi server.
+| Lần | Commit | Pipeline (giây) | Gián đoạn quan sát (giây) | GitHub Actions |
+| --- | --- | ---: | ---: | --- |
+| 1 | `3095e0a` | 84 | 12,375 | [#66](https://github.com/ericphan2545/devops-final/actions/runs/42617331817) |
+| 2 | `2869d1d` | 70 | 0 | [#60](https://github.com/ericphan2545/devops-final/actions/runs/42610803949) |
+| 3 | `64e3ff5` | 67 | 0 | [#64](https://github.com/ericphan2545/devops-final/actions/runs/42616283577) |
+| **Trung bình** | — | **73,67** | **4,125** | — |
 
-#### 6.2.2. Chuẩn bị
+#### 6.2.1. Lần kiểm tra 1 — Commit 3095e0a
 
-1. Chọn thời gian ba lần deploy cùng nhóm. Hoàn tất các diễn tập lỗi/restore trước khi đo.
-2. Chạy trên laptop Windows, trong PowerShell tại thư mục repo, không chạy trong phiên SSH.
-3. Xác nhận endpoint công khai đang khỏe:
+- **Khoảng đo:** 12:26:01,898 → 12:30:26,444.
+- **Số lượt kiểm tra:** **251** lượt, gồm **246 khỏe**, **5 lỗi**; baseline khỏe, một đợt gián đoạn đã phục hồi, phiên đo kết thúc ở trạng thái **COMPLETE**.
+- **Log triển khai:** app bắt đầu tạo lại lúc **12:29:49**, khởi động lúc **12:30:00**; **Deploy OK lúc 12:30:03**, đúng phiên bản `3095e0a`, đủ 7/7 service.
+- **Đối chiếu gián đoạn:** request lỗi đầu tiên bắt đầu lúc **12:29:49,643**, response khỏe đầu tiên sau đó kết thúc lúc **12:30:02,018**. Cửa sổ quan sát **12,375 giây** trùng với thời gian thay container app.
+- **Kết quả:** cả ba job thành công, **Total duration 1 phút 24 giây = 84 giây**; các request khỏe trở lại trước khi dừng đo.
 
-~~~powershell
-cd "C:\Users\ADMIN\Downloads\devops-final-git"
-py --version
-curl.exe -i http://todo-devops.duckdns.org/health
-~~~
+Minh chứng: [Actions #66](https://github.com/ericphan2545/devops-final/actions/runs/42617331817) · [log deploy](docs/evidence/week-4/01-run-01-retry-deploy.log) · [CSV](docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.csv) · [JSON](docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.summary.json) · [TXT](docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.summary.txt).
 
-Endpoint cần trả HTTP 200 và JSON {"status":"ok"}.
-Đo URL công khai để kiểm tra đường truy cập từ laptop qua mạng, Nginx và app.
-Localhost trên laptop không đo EC2.
+#### 6.2.2. Lần kiểm tra 2 — Commit 2869d1d
 
-#### 6.2.3. Lần đo 1
+- **Khoảng đo:** 11:32:27,435 → 12:03:01,120.
+- **Số lượt kiểm tra:** **1.793** lượt, toàn bộ **1.793 khỏe**, **0 lỗi**; baseline khỏe và phiên đo kết thúc ở trạng thái **COMPLETE**.
+- **Log triển khai:** app bắt đầu tạo lại lúc **11:40:52**, khởi động lúc **11:40:53**; **Deploy OK lúc 11:40:54**, đúng phiên bản `2869d1d`, đủ 7/7 service.
+- **Đối chiếu gián đoạn:** phép đo bao phủ toàn bộ deploy và tiếp tục theo dõi sau triển khai; không có mẫu lỗi, nên gián đoạn quan sát là **0 giây**.
+- **Kết quả:** cả ba job thành công, **Total duration 1 phút 10 giây = 70 giây**; endpoint /health được công cụ ghi nhận khỏe trong toàn bộ các mẫu kiểm tra.
 
-##### Terminal A — Chạy công cụ đo
+Minh chứng: [Actions #60](https://github.com/ericphan2545/devops-final/actions/runs/42610803949) · [log deploy](docs/evidence/week-4/02-run-02-deploy.log) · [CSV](docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.csv) · [JSON](docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.summary.json) · [TXT](docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.summary.txt).
 
-~~~powershell
-py scripts/measure_downtime.py http://todo-devops.duckdns.org/health --run run-01
-~~~
+#### 6.2.3. Lần kiểm tra 3 — Commit 64e3ff5
 
-Nếu dùng Git Bash/Linux, lệnh tương đương:
+- **Khoảng đo:** 12:18:54,396 → 12:22:43,565.
+- **Số lượt kiểm tra:** **223** lượt, toàn bộ **223 khỏe**, **0 lỗi**; baseline khỏe và phiên đo kết thúc ở trạng thái **COMPLETE**.
+- **Log triển khai:** app bắt đầu tạo lại lúc **12:22:09**, khởi động lúc **12:22:10**; **Deploy OK lúc 12:22:12**, đúng phiên bản `64e3ff5`, đủ 7/7 service.
+- **Đối chiếu gián đoạn:** tiếp tục quan sát hơn **30 giây sau Deploy OK**; không có mẫu lỗi, nên gián đoạn quan sát là **0 giây**.
+- **Kết quả:** cả ba job thành công, **Total duration 1 phút 7 giây = 67 giây**; endpoint /health được công cụ ghi nhận khỏe trong toàn bộ các mẫu kiểm tra.
 
-~~~bash
-bash scripts/measure-downtime.sh http://todo-devops.duckdns.org/health --run run-01
-~~~
+Minh chứng: [Actions #64](https://github.com/ericphan2545/devops-final/actions/runs/42616283577) · [log deploy](docs/evidence/week-4/03-run-03-retry-deploy.log) · [CSV](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.csv) · [JSON](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.json) · [TXT](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.txt).
 
-Chờ "Initial healthy baseline: YES" và các dấu chấm ổn định khoảng 10–15 giây.
-Giữ terminal A chạy suốt quá trình push, pipeline và kiểm tra bản mới.
+### 6.3. Nhận xét kết quả
 
-##### Terminal B — Đưa một thay đổi nhỏ qua quy trình Git của nhóm
+- Pipeline trung bình: **(84 + 70 + 67) / 3 = 73,67 giây** (làm tròn hai chữ số thập phân).
+- Gián đoạn quan sát trung bình: **(12,375 + 0 + 0) / 3 = 4,125 giây**.
+- Cả ba lần triển khai đúng commit và kết thúc với **7/7 service sẵn sàng**. Lần 1 ghi nhận một đợt gián đoạn khi thay container; lần 2 và 3 không phát hiện mẫu lỗi.
 
-1. Thay một dòng chữ hiển thị trong app/templates/index.html để kiểm tra bản app mới sau deploy.
-2. Commit/push bằng nhánh và PR theo quy trình nhóm. Đợi PR test/build đạt rồi merge theo quyền được giao.
-3. Nếu main có bảo vệ, phối hợp người có quyền merge. Không tạo test lỗi trong lần đo deploy bình thường.
+Giá trị 0 nghĩa là không phát hiện lỗi trong các mẫu đo, không khẳng định server hoàn toàn không gián đoạn. Số đo phản ánh quan sát từ laptop, có ảnh hưởng của thời gian request và khoảng nghỉ giữa các lần kiểm tra.
 
-Workflow hiện tại chỉ deploy khi có push/merge vào main.
-Lần chạy pull request chỉ test/build, không tính là lần deploy thật.
+Xem [ảnh và dữ liệu minh chứng tuần 4](#tuần-4--minh-chứng-đo-triển-khai).
 
-Ghi lại:
+### 6.4. Hướng dẫn thực nghiệm Backup, Restore và Bảo mật — Huỳnh Hữu Như Mẫn
 
-- SHA commit trên main thực sự được deploy (có thể khác SHA commit nhánh sau squash/merge).
-- Link đúng lần GitHub Actions, sự kiện push, nhánh main.
-- Total duration của toàn workflow, gồm thời gian test/build/deploy.
-- Dòng "Deploy OK: phiên bản ..." của job deploy.
+#### 6.4.1. Phạm vi và sản phẩm bàn giao
 
-##### Khi deploy xong
+**Phụ trách: Huỳnh Hữu Như Mẫn — MSSV 23090020.**
 
-1. Xác nhận ba job xanh; SHA trong Deploy OK đúng commit đang đo.
-2. Mở web, tải lại và đối chiếu Phiên bản ở footer với SHA vừa triển khai.
-3. Kiểm tra dữ liệu có trước deploy vẫn còn. Chụp ảnh phiên bản và dữ liệu.
-4. Đợi terminal A khỏe ổn định thêm 10–15 giây, sau đó Ctrl+C.
-5. Mở file .summary.txt theo đường dẫn chương trình in ra, chụp kết quả terminal.
-6. Điền một dòng bảng tại mục 6.2.6.
+Phần việc này bao gồm thực nghiệm khôi phục dữ liệu 3 lần, phối hợp diễn tập Sự cố 2, kiểm định bảo mật 5 tiêu chí và xây dựng phương pháp đối chiếu dữ liệu 2 lớp; bàn giao số liệu và minh chứng cho nhóm.
 
-Giữ terminal A chạy trong lúc chờ pipeline. Kết thúc phép đo sau khi app hồi phục.
+- File liên kết tài liệu cá nhân: [docs/week-4-person-3.md](docs/week-4-person-3.md).
+- Bảng số liệu 3 lần Restore dữ liệu kèm mã MD5 checksum tại Mục 6.4.7.
+- Log kỹ thuật và minh chứng diễn tập Sự cố 2 tại Mục 6.4.4.
+- Bộ ảnh minh chứng thực nghiệm đặt tại [docs/evidence/week-4/](docs/evidence/week-4/) và Mục 14.
 
-#### 6.2.4. Lần đo 2 và 3
+#### 6.4.2. Quy tắc an toàn và Chuẩn bị
 
-Lặp lại toàn bộ mục 6.2.3 với hai thay đổi nhỏ hợp lệ và hai lần deploy khác nhau:
+1. **Chuẩn bị môi trường:** SSH vào EC2 (`cd ~/devops-todo`), mở PowerShell trên máy cá nhân và mở trình duyệt bằng **cửa sổ ẩn danh mới** để tránh cache trang offline.
+2. **Quy tắc an toàn:** Tuyệt đối không `cat .env` hay mở file nhạy cảm khi đang chụp/quay màn hình. Thêm prefix `date '+%F %T' &&` trước các lệnh thao tác để ghi nhận mốc thời gian thực tế.
 
-~~~powershell
-py scripts/measure_downtime.py http://todo-devops.duckdns.org/health --run run-02
-~~~
+#### 6.4.3. Quy trình thực nghiệm Restore DB (3 Lần & MD5 Checksum)
 
-~~~powershell
-py scripts/measure_downtime.py http://todo-devops.duckdns.org/health --run run-03
-~~~
+Sao lưu dữ liệu, xóa toàn bộ bảng `todos`, tiến hành khôi phục và đối chiếu số lượng bản ghi kèm mã băm MD5 checksum:
 
-Mỗi lần có workflow, commit và bộ minh chứng riêng.
-Không đổi tên cùng một bộ số đo thành ba lần. Các file có timestamp UTC và hậu tố riêng để tránh ghi đè.
+```bash
+# 1. Kiểm tra ban đầu (14 việc, mã checksum)
+date '+%F %T' && bash scripts/db-check.sh
 
-#### 6.2.5. Đọc kết quả đúng
+# 2. Sao lưu dữ liệu ra file nén
+bash scripts/backup.sh
 
-- COMPLETE: có baseline ban đầu khỏe và không kết thúc giữa một đợt lỗi.
-  COMPLETE không tự chứng minh deploy thành công; vẫn kiểm tra job deploy và phiên bản web.
-- Healthy: HTTP 200 và body JSON có status=ok.
-  Redirect, lỗi HTTP, timeout, JSON không hợp lệ hay status=error đều là mẫu không khỏe.
-- Observed interruption window: từ lúc bắt đầu request lỗi đầu tiên đến lúc hoàn tất response
-  khỏe đầu tiên sau đó, cộng các đợt đã hồi phục. Đây là cửa sổ gián đoạn quan sát từ client,
-  không phải downtime chính xác của server hoặc cận trên/cận dưới của downtime.
-- Interval 0,5 giây là khoảng nghỉ SAU response; mỗi vòng còn mất thời gian request.
-  Timeout áp dụng cho thao tác chờ mạng, không phải giới hạn tổng thời gian chạy chương trình.
-- Thời lượng dùng đồng hồ monotonic. CSV ghi UTC; giờ Việt Nam = UTC+7.
-- Không có mẫu lỗi: ghi "Không quan sát thấy gián đoạn trong lần đo", giá trị quan sát 0.
-  Không kết luận zero-downtime: lỗi ngắn có thể nằm giữa hai lần kiểm tra.
-- INCOMPLETE: điền "Chưa xác định"; không điền 0 vào bảng. Xử lý nguyên nhân rồi đo lại.
-- Mất mạng laptop cũng tạo mẫu lỗi: ghi nguyên nhân, loại lần đo không hợp lệ khỏi trung bình.
-- Không mở .env, secrets hoặc giá trị secret khi chụp minh chứng.
+# 3. Giả lập xóa sạch dữ liệu bảng todos về 0
+docker compose exec db psql -U todo -d todo -c "DELETE FROM todos;"
+bash scripts/db-check.sh
 
-Có thể dùng --samples 5 để kiểm tra nhanh công cụ; cách này không thay thế một lần đo deploy đầy đủ.
-Tùy chọn --duration giới hạn thời gian đo; mặc định chương trình chạy đến khi Ctrl+C.
+# 4. Khôi phục dữ liệu và đo thời gian thực thi (Gõ 'yes' xác nhận)
+time bash scripts/restore.sh backups/$(ls -t backups/ | head -n 1)
 
-#### 6.2.6. Bảng bàn giao — điền số đo thật
+# 5. Kiểm tra toàn vẹn sau khi restore
+bash scripts/db-check.sh
+```
+*Lặp lại chuỗi lệnh trên 3 lần độc lập để thu thập dòng thời gian `real`.*
 
-| Lần | SHA main | Link Actions | Total duration (giây) | Gián đoạn quan sát (giây) | COMPLETE + deploy xanh + SHA đúng? | File dữ liệu và ảnh |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | Chưa đo | Chưa có | Chưa đo | Chưa đo | Chưa kiểm tra | Chưa có |
-| 2 | Chưa đo | Chưa có | Chưa đo | Chưa đo | Chưa kiểm tra | Chưa có |
-| 3 | Chưa đo | Chưa có | Chưa đo | Chưa đo | Chưa kiểm tra | Chưa có |
+#### 6.4.4. Diễn tập Sự cố 2 — Sai mật khẩu DB (`APP_DB_PASSWORD`)
 
-- Đổi Total duration về giây, rồi tính (lần 1 + lần 2 + lần 3) / 3.
-- Chỉ tính trung bình gián đoạn của ba lần hợp lệ, theo dõi hết deploy và đã hồi phục.
-- Ghi rõ phiên bản công cụ, interval, timeout, thời gian đo và đường dẫn file bằng chứng.
-- Không ghi lại ba số 69 giây của tuần 2 như thể đó là ba lần deploy mới của tuần 4.
-- Ngô Tấn Đức bàn giao kết quả đo cá nhân cho người tổng hợp báo cáo nhóm.
+- **Gây lỗi:** Thay đổi biến `APP_DB_PASSWORD` trong `.env` thành chuỗi sai, khởi chạy lại container app (`docker compose up -d app`).
+- **Triệu chứng & Phát hiện:** Web báo lỗi **HTTP 503 (Cơ sở dữ liệu chưa sẵn sàng)**. Panel Database trên Grafana chuyển `DOWN`. Discord nhận cảnh báo `[FIRING:1] DatabaseDown` sau ~1.5 phút.
+- **Khoanh vùng lỗi:**
+  - `docker compose logs app --tail 20` $\rightarrow$ In dòng `ERROR in app: Database request failed: OperationalError`.
+  - `docker compose logs db --tail 20` $\rightarrow$ In dòng `FATAL: password authentication failed for user "todo_app"`.
+- **Khôi phục:** Trả lại mật khẩu đúng trong `.env` và chạy `bash scripts/deploy.sh`. Discord tự động gửi thông báo `[RESOLVED] DatabaseDown`.
 
-#### 6.2.7. Đoạn báo cáo — điền sau khi đo
+#### 6.4.5. Kiểm định Bảo mật System & Database
 
-"Nhóm đo ba lần triển khai hợp lệ từ nhánh main. Một chương trình trên laptop gửi GET
-đến endpoint công khai /health, ghi trạng thái HTTP, nội dung health và thời gian phản hồi.
-Pipeline trung bình mất [điền] giây theo Total duration của GitHub Actions.
-Cửa sổ gián đoạn quan sát trung bình là [điền] giây. Cách đo phụ thuộc thời gian request
-và khoảng nghỉ 0,5 giây, nên đây là số đo quan sát từ client.
-Sau deploy, nhóm đối chiếu mã phiên bản và kiểm tra dữ liệu cũ còn nguyên."
+1. **Firewall & SSH:** UFW Firewall chỉ cho phép cổng 22 (SSH) và 80 (HTTP). Cấu hình `sshd_config` cấm đăng nhập bằng mật khẩu (`passwordauthentication no`).
+2. **Quét cổng & Secrets:** Quét từ laptop bằng `Test-NetConnection`: cổng 80 trả `True`, cổng 5432 (PostgreSQL) và 3000 (Grafana) trả `False`. Lệnh `git ls-files` không lộ file `.env` hay `secrets/`.
+3. **Phân quyền tối thiểu `todo_app`:** Thực thi 3 câu lệnh vượt quyền quản trị bằng `todo_app` bị PostgreSQL chặn hoàn toàn (`DROP TABLE` báo `ERROR: must be owner`, `TRUNCATE` báo `ERROR: permission denied`, `CREATE TABLE` báo `ERROR: permission denied`).
 
-Nếu cả ba lần không có lỗi, dùng:
-"Không quan sát thấy gián đoạn trong ba cửa sổ đo; kết quả này không chứng minh downtime tuyệt đối bằng 0."
+#### 6.4.6. Cơ chế đối chiếu dữ liệu hai lớp (Double-Verification)
 
-#### 6.2.8. Checklist cá nhân
+- **Lớp 1 — Tầng Database (Machine Level):** Script `db-check.sh` xác nhận số bản ghi (14 công việc) và mã băm MD5 checksum (`55ed94880f7cf39374705f80b0c86e21`) trùng khớp tuyệt đối 100% trước sao lưu và sau khôi phục.
+- **Lớp 2 — Tầng Ứng dụng (App/UI Level):** Trình duyệt ẩn danh truy cập `http://todo-devops.duckdns.org/` hiển thị đầy đủ và chính xác 14 công việc trên giao diện web.
 
-- [ ] Script/hướng dẫn được review, commit/push theo nhánh nhóm.
-- [ ] Ba lần deploy main khác nhau, mỗi lần có baseline khỏe và kết thúc sau hồi phục.
-- [ ] Có CSV, JSON, TXT, ảnh workflow, ảnh phiên bản/dữ liệu web cho từng lần.
-- [ ] Bảng mục 6.2.6 điền số đo thật; đơn vị và trung bình được kiểm tra.
-- [ ] Viết đoạn giải thích cách đo, kết quả và giới hạn.
-- [ ] Quay đoạn trình bày phần cá nhân; bàn giao cho người tổng hợp báo cáo nhóm.
-- [ ] Tự tập phần bảo vệ chung: push/deploy, backup/restore và một sự cố.
+#### 6.4.7. Bảng bàn giao số liệu thực nghiệm Restore
 
-Nếu rà minh chứng CI/CD tuần 2, chỉ ghi nhận ảnh/log hiện có và liệt kê phần cần bổ sung.
+| Lần | Trạng thái trước Backup | Trạng thái sau Restore | Thời gian Restore (`real`) | MD5 Checksum trùng khớp |
+| :---: | :--- | :--- | :---: | :---: |
+| **Lần 1** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m3.081s` | 100% |
+| **Lần 2** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.756s` | 100% |
+| **Lần 3** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.270s` | 100% |
+| **Trung bình** | — | — | **`0m2.702s`** | **100%** |
 
-#### 6.2.9. Nguồn giải thích phương pháp
+#### 6.4.8. Checklist cá nhân
 
-- Đồng hồ monotonic để đo khoảng thời gian: [Python time.monotonic](https://docs.python.org/3.12/library/time.html#time.monotonic)
-- Timeout của thao tác mạng urllib: [Python urllib.request.urlopen](https://docs.python.org/3.12/library/urllib.request.html#urllib.request.urlopen)
-
-Các kết quả HTTP giả lập dùng để kiểm thử công cụ không phải số đo EC2 và không được điền vào bảng mục 6.2.6.
+- [x] Đã đo 3 lần restore dữ liệu thực tế, tính trung bình 2.702s và mã MD5 checksum khớp 100%.
+- [x] Đã diễn tập Sự cố 2, thu thập đủ log `OperationalError`, `FATAL password` và cảnh báo Discord.
+- [x] Đã kiểm định 5 tiêu chí bảo mật (UFW, SSH, Port scan, Git secrets, DB privileges).
+- [x] Đã soạn báo cáo Paper phần Section 6 (Security & Reliability) bàn giao cho Người số 4.
+- [x] Đã quay video lồng tiếng đoạn demo giải thích phần việc cá nhân (2-3 phút).
 
 ## 7. Phần bonus — Giao diện và quản lý công việc
 
-**Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Giao diện hiện tại dùng bố cục trong `todo-clean.zip`: một cột giữa màn hình, nền sáng, màu nhấn xanh, responsive và không dùng thư viện/CDN. Phần này không thay thế nhiệm vụ tuần 1–2.
+**Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.**
+
+Giao diện được thiết kế theo hướng tối giản, bố cục một cột tập trung vào danh sách công việc, màu nhấn xanh và hỗ trợ sáng/tối. HTML, CSS và JavaScript thuần giúp giao diện thích ứng trên máy tính và điện thoại, không phụ thuộc thư viện frontend hoặc CDN. Đây là phần mở rộng về giao diện và trải nghiệm sử dụng.
 
 - Thêm công việc tối đa 200 ký tự, đếm ký tự và chặn tên rỗng/toàn khoảng trắng.
 - Tìm kiếm tiếng Việt có/không dấu, phím `/`, xoá nhanh từ khoá; sắp xếp cũ nhất, mới nhất hoặc tên A–Z.
@@ -436,9 +416,9 @@ Các kết quả HTTP giả lập dùng để kiểm thử công cụ không ph�
 - IndexedDB giữ snapshot và hàng đợi thêm/xoá. Vẫn dùng được trên trang đang mở khi mất mạng; tự gửi lại khi kết nối phục hồi và không tạo trùng khi mất phản hồi.
 - Form thêm/xoá vẫn gửi POST chuẩn khi tắt JavaScript và máy chủ có kết nối.
 
-Sidebar, lịch, ưu tiên, tiến độ, phân loại và đánh dấu hoàn thành đã được bỏ khỏi giao diện theo mẫu ZIP. Schema/API và metadata cũ vẫn được giữ để bảo toàn dữ liệu và xử lý các thao tác đang chờ từ bản trước; giao diện mới không tự xoá dữ liệu cũ.
+Giao diện tập trung vào các thao tác thêm, tìm kiếm, sắp xếp và xoá công việc. Schema/API tiếp tục giữ metadata hiện có để bảo toàn dữ liệu và xử lý các thao tác đồng bộ đang chờ.
 
-Ứng dụng dùng danh sách chung, chưa có tài khoản riêng. Bản Flask gọi API thật, lưu PostgreSQL. Bản HTML xem thử là bản cục bộ riêng và ghi rõ lưu trên thiết bị, không kết nối EC2.
+Ứng dụng sử dụng danh sách công việc chung, chưa có tài khoản riêng. Các thao tác được xử lý qua API Flask và lưu trong PostgreSQL; khi mất kết nối, trình duyệt lưu tạm thao tác để đồng bộ lại khi máy chủ sẵn sàng.
 
 ## 8. Cấu trúc repository
 
@@ -491,11 +471,12 @@ tests/
 docs/
   architecture.drawio
   architecture.png
-  evidence/                   # Minh chứng week-1/, week-2/, week-3/; week-4/ được bổ sung khi diễn tập/đo
+  evidence/                   # Minh chứng week-1/ đến week-4/; tuần 4 có CSV/JSON/TXT, ảnh, log và verification.json
   incidents/                  # Biên bản sự cố
   offline-first.md
   production-sync.md
   week-4-person-2.md           # Liên kết tới hướng dẫn đo tuần 4 tại README mục 6.2
+  week-4-person-3.md           # Liên kết tới hướng dẫn backup, restore và bảo mật tuần 4 tại README mục 6.4
 .env.example
 .gitattributes
 .gitignore
@@ -877,17 +858,93 @@ Lệnh kiểm tra Git không in dòng nào, nghĩa là repo không chứa `.env`
 
 </details>
 
-### Tuần 4 — Minh chứng chờ bổ sung
+### Tuần 4 — Minh chứng đo triển khai
 
-**Chưa có ba lần đo deploy thực tế được ghi nhận.** Công cụ đo đã được chuẩn bị; kết quả HTTP giả lập chỉ kiểm thử công cụ, không phải số liệu triển khai EC2.
+Ảnh Actions, kết quả đo, log deploy và dữ liệu của ba lần triển khai trong [bảng kết quả](#62-kết-quả-ba-lần-triển-khai).
 
-| Nội dung | Minh chứng cần bổ sung |
-| --- | --- |
-| Phần đo của Ngô Tấn Đức | Ba bộ CSV/JSON/TXT tại docs/evidence/week-4/measurements/; ba workflow push main có SHA, Total duration và job deploy xanh; ảnh phiên bản web và dữ liệu sau deploy |
-| Kết quả và nhận xét | Điền bảng ở mục 6.2.6, tính trung bình ba lần hợp lệ và ghi giới hạn phép đo |
-| Các phần còn lại của nhóm | Playbook ba tình huống, số đo phát hiện/khôi phục/restore, ảnh CPU/RAM, báo cáo PDF, video và nhật ký đóng góp |
+<details>
+<summary>Lần 1 — commit 3095e0a, pipeline 84 giây</summary>
 
-Chỉ bổ sung liên kết ảnh/log/video sau khi đã có file hoặc URL thật. Các minh chứng tuần 1–3 ở trên được giữ theo thời điểm thực hiện, không tính lại thành các lần đo mới của tuần 4.
+[Actions #66](https://github.com/ericphan2545/devops-final/actions/runs/42617331817) · [Log deploy có thời gian](docs/evidence/week-4/01-run-01-retry-deploy.log).
+
+![Actions commit 3095e0a thành công, Total duration 84 giây](docs/evidence/week-4/01-run-01-retry-pipeline.png)
+
+![Kết quả đo lần 1](docs/evidence/week-4/01-run-01-retry-measurement.png)
+
+[CSV](docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.csv) · [JSON](docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.summary.json) · [TXT](docs/evidence/week-4/measurements/run-01-retry-20261109T122601Z-8f4b74.summary.txt)
+
+</details>
+
+<details>
+<summary>Lần 2 — commit 2869d1d, pipeline 70 giây</summary>
+
+[Actions #60](https://github.com/ericphan2545/devops-final/actions/runs/42610803949) · [Log deploy có thời gian](docs/evidence/week-4/02-run-02-deploy.log).
+
+![Actions commit 2869d1d thành công, Total duration 70 giây](docs/evidence/week-4/02-run-02-pipeline.png)
+
+![Kết quả đo lần 2](docs/evidence/week-4/02-run-02-measurement.png)
+
+[CSV](docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.csv) · [JSON](docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.summary.json) · [TXT](docs/evidence/week-4/measurements/run-02-20261109T113227Z-398773.summary.txt)
+
+</details>
+
+<details>
+<summary>Lần 3 — commit 64e3ff5, pipeline 67 giây</summary>
+
+[Actions #64](https://github.com/ericphan2545/devops-final/actions/runs/42616283577) · [Log deploy có thời gian](docs/evidence/week-4/03-run-03-retry-deploy.log).
+
+![Actions commit 64e3ff5 thành công, Total duration 67 giây](docs/evidence/week-4/03-run-03-retry-pipeline.png)
+
+![Kết quả đo lần 3](docs/evidence/week-4/03-run-03-retry-measurement.png)
+
+[CSV](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.csv) · [JSON](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.json) · [TXT](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.txt)
+
+</details>
+
+### Tuần 4 — Minh chứng đã thực hiện (Huỳnh Hữu Như Mẫn — Người số 3)
+
+<details>
+<summary>1. Minh chứng 3 lần Restore dữ liệu và mã MD5 Checksum</summary>
+
+![Thực nghiệm 3 lần Restore dữ liệu và mã MD5 Checksum](docs/evidence/week-4/01-backup-restore-3runs.png)
+
+</details>
+
+<details>
+<summary>2. Minh chứng Log lỗi và Cảnh báo Discord Sự cố 2 (Sai mật khẩu DB)</summary>
+
+Log lỗi `OperationalError` ở App và `password authentication failed` ở DB:
+![Log lỗi Sự cố 2](docs/evidence/week-4/02-incident2-db-password-logs.png)
+
+Thông báo Discord `[FIRING]` và `[RESOLVED]` cho sự cố `DatabaseDown`:
+![Cảnh báo Discord Sự cố 2](docs/evidence/week-4/03-incident2-discord-firing-resolved.png)
+
+</details>
+
+<details>
+<summary>3. Minh chứng Tường lửa UFW và Cấu hình SSH</summary>
+
+![Trạng thái UFW Firewall](docs/evidence/week-3/13-step7-ufw-status.png)
+![Cấu hình SSH cấm mật khẩu](docs/evidence/week-3/17-step7-sshd-no-password.png)
+
+</details>
+
+<details>
+<summary>4. Minh chứng Quét cổng mở/đóng và Git Secrets Clean</summary>
+
+- Cổng 80 (HTTP - OPEN): ![Port 80 Open](docs/evidence/week-3/14-step7-port-80-open.png)
+- Cổng 5432 (PostgreSQL - CLOSED): ![Port 5432 Closed](docs/evidence/week-3/15-step7-port-5432-closed.png)
+- Cổng 3000 (Grafana - CLOSED): ![Port 3000 Closed](docs/evidence/week-3/16-step7-port-3000-closed.png)
+- Cây Git sạch bí mật: ![Git Secrets Clean](docs/evidence/week-3/18-step7-git-no-secrets.png)
+
+</details>
+
+<details>
+<summary>5. Minh chứng PostgreSQL chặn 3 lệnh vượt quyền của user todo_app</summary>
+
+![3 Lỗi bị PostgreSQL từ chối quyền đối với todo_app](docs/evidence/week-3/19-step7-todo-app-permission-denied.png)
+
+</details>
 
 ## 15. Xử lý sự cố
 
