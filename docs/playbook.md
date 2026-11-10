@@ -88,18 +88,23 @@ Mô phỏng tình huống container ứng dụng bị dừng đột ngột, từ
 Dừng container ứng dụng:
 
 ```bash
-docker compose stop app
+date '+%F %T' && docker compose stop app
 ```
 
 ### 4.3. Dấu hiệu nhận biết
 
 Sau khi container ứng dụng bị dừng, có thể xuất hiện các hiện tượng:
 
+Sau khi container ứng dụng bị dừng, có thể xuất hiện
+các hiện tượng sau:
+
 - Website không thể truy cập hoặc trả về HTTP 502 Bad Gateway.
-- Container ứng dụng không còn ở trạng thái đang chạy.
+- Endpoint /health không phản hồi bình thường.
+- Container app chuyển sang trạng thái Stopped.
 - Log Nginx xuất hiện lỗi kết nối đến dịch vụ ứng dụng.
-- Prometheus/Alertmanager có thể gửi cảnh báo AppDown.
-- Grafana hiển thị trạng thái ứng dụng DOWN.
+- Prometheus phát hiện không thể scrape app:8000 liên tục trong khoảng 1 phút.
+- Alertmanager gửi cảnh báo AppDown đến Discord với trạng thái FIRING.
+- Grafana hiển thị panel App ở trạng thái DOWN.
 
 ### 4.4. Kiểm tra và xác định nguyên nhân
 
@@ -128,7 +133,7 @@ Nếu container app đã dừng và Nginx không thể kết nối đến dịch
 Khởi động lại container:
 
 ```bash
-docker compose start app
+date '+%F %T' && docker compose start app
 ```
 
 Kiểm tra trạng thái:
@@ -143,23 +148,22 @@ Kiểm tra Health Check:
 curl -i http://localhost/health
 ```
 
-Cuối cùng, truy cập website từ trình duyệt để xác nhận ứng dụng hoạt động trở lại.
+- Chờ Prometheus scrape ứng dụng thành công.
+- Xác nhận cảnh báo AppDown chuyển sang RESOLVED trên Discord.
+- Xác nhận website truy cập bình thường trở lại.
 
 ### 4.6. Kết quả diễn tập thực tế
 
 - **Ngày thực hiện:** 09/11/2026.
 - **Hiện tượng:** Sau khi chạy `docker compose stop app`, container `devops-todo-app-1` chuyển sang trạng thái Stopped.
-- **Kết quả kiểm tra:** Endpoint `/health` trên EC2 trả về HTTP 502 Bad Gateway.
-- **Nguyên nhân:** Container ứng dụng bị dừng nên Nginx không thể chuyển tiếp yêu cầu đến dịch vụ ứng dụng.
-- **Thời điểm ghi nhận trong log:** 15:28:10 UTC, ứng dụng nhận tín hiệu dừng (term).
+- **Kết quả kiểm tra:** Endpoint `/health` trả về HTTP 502 Bad Gateway do Nginx không thể kết nối đến ứng dụng.
+- **Nguyên nhân:** Container ứng dụng bị dừng, khiến Nginx không thể chuyển tiếp yêu cầu đến backend.
+- **Thời điểm ghi nhận trong log:** 22:28:10, ứng dụng nhận tín hiệu dừng (term).
 - **Khôi phục:** Chạy `docker compose start app`. Container chuyển sang trạng thái Up và Health Check trả về `{"status":"ok"}`.
 - **Kết quả cuối cùng:** Đã khôi phục thành công, ứng dụng hoạt động trở lại.
 
 **Minh chứng cần bổ sung:**
-- Ảnh trạng thái container trước và sau khi dừng ứng dụng.
-- Ảnh lỗi HTTP 502.
-- Ảnh kết quả Health Check sau khi khôi phục.
-- Log liên quan đến sự cố.
+- docs\evidence\week-4\incidents\incident-01-app-down
 
 ---
 
@@ -246,15 +250,16 @@ curl -i http://localhost/health
 ### 5.6. Kết quả diễn tập thực tế
 
 - **Ngày thực hiện:** 09/11/2026.
-- **Hiện tượng:** Sau khi thay đổi `APP_DB_PASSWORD` thành giá trị không chính xác và tạo lại container ứng dụng, endpoint `/health` trả về HTTP 500 Internal Server Error với nội dung `cannot connect to database`.
+- **Hiện tượng:** Sau khi thay đổi giá trị `APP_DB_PASSWORD` thành mật khẩu không chính xác trong file `.env` và tạo lại container ứng dụng, endpoint `/health` trả về HTTP 500 Internal Server Error với nội dung `cannot connect to database`.
 - **Nguyên nhân:** Mật khẩu ứng dụng sử dụng để xác thực với PostgreSQL không khớp với mật khẩu của user `todo_app`.
 - **Bằng chứng từ log:** PostgreSQL ghi nhận lỗi `FATAL: password authentication failed for user "todo_app"`.
-- **Cảnh báo giám sát:** Discord gửi cảnh báo `[FIRING:1] DatabaseDown app (app:8000 critical)`. Chỉ số `todo_db_up` bằng 0 liên tục trong 1 phút.
-- **Kết quả mô phỏng:** Đã tạo được tình huống lỗi kết nối cơ sở dữ liệu và xác nhận hệ thống giám sát phát hiện sự cố.
-- **Kết quả khôi phục:** Chưa xác nhận.
-- **Ảnh và log:** Cần bổ sung ảnh lỗi HTTP 500, log PostgreSQL và thông báo Discord DatabaseDown.
+- **Cảnh báo giám sát:** Discord Alert Bot gửi cảnh báo `[FIRING:1] DatabaseDown` khi chỉ số `todo_db_up` bằng 0 liên tục trong 1 phút.
+- **Khôi phục:** Đã phối hợp với thành viên Eric để khôi phục cấu hình mật khẩu database.
+- **Cảnh báo sau khôi phục:** Discord ghi nhận trạng thái `[RESOLVED] DatabaseDown`.
+- **Kết quả cuối cùng:** Đã ghi nhận quá trình phát hiện và giải quyết sự cố. Cần xác nhận lại Health Check và trạng thái website sau khôi phục.
 
-<Chưa hoàn tất: cần khôi phục cấu hình ban đầu, kiểm tra Health Check và xác nhận website hoạt động trở lại.>
+**Minh chứng:**
+- docs\evidence\week-4\incidents\incident-02-database-down
 
 ---
 
@@ -295,6 +300,8 @@ Sau khi cổng 80 bị chặn, có thể xuất hiện:
 - Kết nối SSH qua cổng 22 vẫn hoạt động.
 - Ứng dụng có thể vẫn hoạt động bình thường bên trong EC2.
 - Hệ thống giám sát nội bộ có thể vẫn hiển thị ứng dụng ở trạng thái UP.
+- Discord không gửi cảnh báo AppDown hoặc DatabaseDown vì ứng dụng và database vẫn hoạt động nội bộ.
+- Sự cố nằm ở lớp truy cập mạng bên ngoài (AWS Security Group), không phải lỗi của ứng dụng hoặc database.
 
 ### 6.5. Kiểm tra và xác định nguyên nhân
 
@@ -331,15 +338,18 @@ Sau đó, thành viên số 1:
 
 ### 6.7. Kết quả diễn tập thực tế
 
-- **Ngày và giờ thực hiện:** Chưa thực hiện.
+- **Ngày thực hiện:** 10/11/2026.
 - **Người thao tác Security Group:** Eric – thành viên số 4.
-- **Kết quả truy cập từ bên ngoài:** Chưa ghi nhận.
-- **Kết quả Health Check nội bộ:** Chưa ghi nhận.
-- **Thời gian khôi phục:** Chưa ghi nhận.
-- **Ảnh và log minh chứng:** Chưa có.
-- **Kết quả khôi phục:** Chưa xác nhận.
+- **Thao tác gây lỗi:** Xóa quy tắc inbound HTTP TCP 80 trong AWS Security Group.
+- **Kết quả truy cập từ bên ngoài:** Website không thể truy cập, trình duyệt hiển thị `ERR_CONNECTION_TIMED_OUT`; PowerShell ghi nhận lỗi kết nối timeout.
+- **Kết quả kiểm tra nội bộ:** Các container vẫn hoạt động. Endpoint `/health` trên EC2 trả về HTTP 200 OK với nội dung `{"status":"ok"}`.
+- **Nguyên nhân:** Kết nối HTTP từ Internet đến EC2 bị chặn bởi AWS Security Group.
+- **Cảnh báo Discord:** Không phát sinh cảnh báo AppDown hoặc DatabaseDown trong thời gian diễn tập.
+- **Khôi phục:** Eric thực hiện thêm lại quy tắc inbound HTTP TCP 80 theo cấu hình ban đầu.
+- **Kết quả khôi phục:** Cần xác nhận lại khả năng truy cập website từ bên ngoài sau khi khôi phục.
 
-<Chưa hoàn tất: cần phối hợp với thành viên số 4 để thực hiện mô phỏng và ghi nhận kết quả thực tế.>
+**Minh chứng:**
+- docs\evidence\week-4\incidents\incident-03-port-80
 
 ---
 
