@@ -33,7 +33,7 @@
 | **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | — |
 | **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) | Script đo deploy; đo thời gian pipeline/gián đoạn ba lần, ghi minh chứng và cập nhật README |
 | **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo | Thực hiện ba tình huống sự cố, Thu thập bằng chứng, Viết Playbook và biên bản sự cố, Cập nhật kiến trúc hệ thống, Phối hợp với các thành viên |
-| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | — |
+| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | Đo thực nghiệm Restore DB 3 lần (MD5 `55ed9488...`, TB 2.702s); diễn tập Sự cố 2 (sai mật khẩu DB); rà soát bảo mật UFW, SSH, Git Secrets, phân quyền hẹp `todo_app` và viết Báo cáo Paper Sec/Rel |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
 
@@ -323,6 +323,84 @@ Giá trị 0 nghĩa là không phát hiện lỗi trong các mẫu đo, không k
 
 Xem [ảnh và dữ liệu minh chứng tuần 4](#tuần-4--minh-chứng-đo-triển-khai).
 
+### 6.4. Hướng dẫn thực nghiệm Backup, Restore và Bảo mật — Huỳnh Hữu Như Mẫn
+
+#### 6.4.1. Phạm vi và sản phẩm bàn giao
+
+**Phụ trách: Huỳnh Hữu Như Mẫn — MSSV 23090020.**
+
+Phần việc này bao gồm thực nghiệm khôi phục dữ liệu 3 lần, phối hợp diễn tập Sự cố 2, kiểm định bảo mật 5 tiêu chí và xây dựng phương pháp đối chiếu dữ liệu 2 lớp; bàn giao số liệu và minh chứng cho nhóm.
+
+- File liên kết tài liệu cá nhân: [docs/week-4-person-3.md](docs/week-4-person-3.md).
+- Bảng số liệu 3 lần Restore dữ liệu kèm mã MD5 checksum tại Mục 6.4.7.
+- Log kỹ thuật và minh chứng diễn tập Sự cố 2 tại Mục 6.4.4.
+- Bộ ảnh minh chứng thực nghiệm đặt tại [docs/evidence/week-4/](docs/evidence/week-4/) và Mục 14.
+
+#### 6.4.2. Quy tắc an toàn và Chuẩn bị
+
+1. **Chuẩn bị môi trường:** SSH vào EC2 (`cd ~/devops-todo`), mở PowerShell trên máy cá nhân và mở trình duyệt bằng **cửa sổ ẩn danh mới** để tránh cache trang offline.
+2. **Quy tắc an toàn:** Tuyệt đối không `cat .env` hay mở file nhạy cảm khi đang chụp/quay màn hình. Thêm prefix `date '+%F %T' &&` trước các lệnh thao tác để ghi nhận mốc thời gian thực tế.
+
+#### 6.4.3. Quy trình thực nghiệm Restore DB (3 Lần & MD5 Checksum)
+
+Sao lưu dữ liệu, xóa toàn bộ bảng `todos`, tiến hành khôi phục và đối chiếu số lượng bản ghi kèm mã băm MD5 checksum:
+
+```bash
+# 1. Kiểm tra ban đầu (14 việc, mã checksum)
+date '+%F %T' && bash scripts/db-check.sh
+
+# 2. Sao lưu dữ liệu ra file nén
+bash scripts/backup.sh
+
+# 3. Giả lập xóa sạch dữ liệu bảng todos về 0
+docker compose exec db psql -U todo -d todo -c "DELETE FROM todos;"
+bash scripts/db-check.sh
+
+# 4. Khôi phục dữ liệu và đo thời gian thực thi (Gõ 'yes' xác nhận)
+time bash scripts/restore.sh backups/$(ls -t backups/ | head -n 1)
+
+# 5. Kiểm tra toàn vẹn sau khi restore
+bash scripts/db-check.sh
+```
+*Lặp lại chuỗi lệnh trên 3 lần độc lập để thu thập dòng thời gian `real`.*
+
+#### 6.4.4. Diễn tập Sự cố 2 — Sai mật khẩu DB (`APP_DB_PASSWORD`)
+
+- **Gây lỗi:** Thay đổi biến `APP_DB_PASSWORD` trong `.env` thành chuỗi sai, khởi chạy lại container app (`docker compose up -d app`).
+- **Triệu chứng & Phát hiện:** Web báo lỗi **HTTP 503 (Cơ sở dữ liệu chưa sẵn sàng)**. Panel Database trên Grafana chuyển `DOWN`. Discord nhận cảnh báo `[FIRING:1] DatabaseDown` sau ~1.5 phút.
+- **Khoanh vùng lỗi:**
+  - `docker compose logs app --tail 20` $\rightarrow$ In dòng `ERROR in app: Database request failed: OperationalError`.
+  - `docker compose logs db --tail 20` $\rightarrow$ In dòng `FATAL: password authentication failed for user "todo_app"`.
+- **Khôi phục:** Trả lại mật khẩu đúng trong `.env` và chạy `bash scripts/deploy.sh`. Discord tự động gửi thông báo `[RESOLVED] DatabaseDown`.
+
+#### 6.4.5. Kiểm định Bảo mật System & Database
+
+1. **Firewall & SSH:** UFW Firewall chỉ cho phép cổng 22 (SSH) và 80 (HTTP). Cấu hình `sshd_config` cấm đăng nhập bằng mật khẩu (`passwordauthentication no`).
+2. **Quét cổng & Secrets:** Quét từ laptop bằng `Test-NetConnection`: cổng 80 trả `True`, cổng 5432 (PostgreSQL) và 3000 (Grafana) trả `False`. Lệnh `git ls-files` không lộ file `.env` hay `secrets/`.
+3. **Phân quyền tối thiểu `todo_app`:** Thực thi 3 câu lệnh vượt quyền quản trị bằng `todo_app` bị PostgreSQL chặn hoàn toàn (`DROP TABLE` báo `ERROR: must be owner`, `TRUNCATE` báo `ERROR: permission denied`, `CREATE TABLE` báo `ERROR: permission denied`).
+
+#### 6.4.6. Cơ chế đối chiếu dữ liệu hai lớp (Double-Verification)
+
+- **Lớp 1 — Tầng Database (Machine Level):** Script `db-check.sh` xác nhận số bản ghi (14 công việc) và mã băm MD5 checksum (`55ed94880f7cf39374705f80b0c86e21`) trùng khớp tuyệt đối 100% trước sao lưu và sau khôi phục.
+- **Lớp 2 — Tầng Ứng dụng (App/UI Level):** Trình duyệt ẩn danh truy cập `http://todo-devops.duckdns.org/` hiển thị đầy đủ và chính xác 14 công việc trên giao diện web.
+
+#### 6.4.7. Bảng bàn giao số liệu thực nghiệm Restore
+
+| Lần | Trạng thái trước Backup | Trạng thái sau Restore | Thời gian Restore (`real`) | MD5 Checksum trùng khớp |
+| :---: | :--- | :--- | :---: | :---: |
+| **Lần 1** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m3.081s` | 100% |
+| **Lần 2** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.756s` | 100% |
+| **Lần 3** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.270s` | 100% |
+| **Trung bình** | — | — | **`0m2.702s`** | **100%** |
+
+#### 6.4.8. Checklist cá nhân
+
+- [x] Đã đo 3 lần restore dữ liệu thực tế, tính trung bình 2.702s và mã MD5 checksum khớp 100%.
+- [x] Đã diễn tập Sự cố 2, thu thập đủ log `OperationalError`, `FATAL password` và cảnh báo Discord.
+- [x] Đã kiểm định 5 tiêu chí bảo mật (UFW, SSH, Port scan, Git secrets, DB privileges).
+- [x] Đã soạn báo cáo Paper phần Section 6 (Security & Reliability) bàn giao cho Người số 4.
+- [x] Đã quay video lồng tiếng đoạn demo giải thích phần việc cá nhân (2-3 phút).
+
 ## 7. Phần bonus — Giao diện và quản lý công việc
 
 **Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Giao diện hiện tại dùng bố cục trong `todo-clean.zip`: một cột giữa màn hình, nền sáng, màu nhấn xanh, responsive và không dùng thư viện/CDN. Phần này không thay thế nhiệm vụ tuần 1–2.
@@ -394,6 +472,7 @@ docs/
   offline-first.md
   production-sync.md
   week-4-person-2.md           # Liên kết tới hướng dẫn đo tuần 4 tại README mục 6.2
+  week-4-person-3.md           # Liên kết tới hướng dẫn backup, restore và bảo mật tuần 4 tại README mục 6.4
 .env.example
 .gitattributes
 .gitignore
@@ -815,6 +894,51 @@ Lệnh kiểm tra Git không in dòng nào, nghĩa là repo không chứa `.env`
 ![Kết quả đo lần 3](docs/evidence/week-4/03-run-03-retry-measurement.png)
 
 [CSV](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.csv) · [JSON](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.json) · [TXT](docs/evidence/week-4/measurements/run-03-retry-20261109T121854Z-937bd6.summary.txt)
+
+</details>
+
+### Tuần 4 — Minh chứng đã thực hiện (Huỳnh Hữu Như Mẫn — Người số 3)
+
+<details>
+<summary>1. Minh chứng 3 lần Restore dữ liệu và mã MD5 Checksum</summary>
+
+![Thực nghiệm 3 lần Restore dữ liệu và mã MD5 Checksum](docs/evidence/week-4/01-backup-restore-3runs.png)
+
+</details>
+
+<details>
+<summary>2. Minh chứng Log lỗi và Cảnh báo Discord Sự cố 2 (Sai mật khẩu DB)</summary>
+
+Log lỗi `OperationalError` ở App và `password authentication failed` ở DB:
+![Log lỗi Sự cố 2](docs/evidence/week-4/02-incident2-db-password-logs.png)
+
+Thông báo Discord `[FIRING]` và `[RESOLVED]` cho sự cố `DatabaseDown`:
+![Cảnh báo Discord Sự cố 2](docs/evidence/week-4/03-incident2-discord-firing-resolved.png)
+
+</details>
+
+<details>
+<summary>3. Minh chứng Tường lửa UFW và Cấu hình SSH</summary>
+
+![Trạng thái UFW Firewall](docs/evidence/week-3/13-step7-ufw-status.png)
+![Cấu hình SSH cấm mật khẩu](docs/evidence/week-3/17-step7-sshd-no-password.png)
+
+</details>
+
+<details>
+<summary>4. Minh chứng Quét cổng mở/đóng và Git Secrets Clean</summary>
+
+- Cổng 80 (HTTP - OPEN): ![Port 80 Open](docs/evidence/week-3/14-step7-port-80-open.png)
+- Cổng 5432 (PostgreSQL - CLOSED): ![Port 5432 Closed](docs/evidence/week-3/15-step7-port-5432-closed.png)
+- Cổng 3000 (Grafana - CLOSED): ![Port 3000 Closed](docs/evidence/week-3/16-step7-port-3000-closed.png)
+- Cây Git sạch bí mật: ![Git Secrets Clean](docs/evidence/week-3/18-step7-git-no-secrets.png)
+
+</details>
+
+<details>
+<summary>5. Minh chứng PostgreSQL chặn 3 lệnh vượt quyền của user todo_app</summary>
+
+![3 Lỗi bị PostgreSQL từ chối quyền đối với todo_app](docs/evidence/week-3/19-step7-todo-app-permission-denied.png)
 
 </details>
 
