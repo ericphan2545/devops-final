@@ -1,0 +1,14 @@
+Run: check
+Target: http://todo-devops.duckdns.org/health
+Status: COMPLETE
+Started (UTC): 2026-11-09T10:55:10.776+00:00
+Finished (UTC): 2026-11-09T10:55:15.650+00:00
+Checks / healthy / failed: 5 / 5 / 0
+Initial healthy baseline: True
+Observed interruption window (seconds): 0
+Recovered episodes: 0
+Open episode at finish: False
+CSV: check-20261109T105510Z-e16401.csv
+JSON: check-20261109T105510Z-e16401.summary.json
+
+Estimated client-observed window: first failed request START to first subsequent healthy response END, summed across recovered episodes. Includes request latency/timeouts and sampling effects; not exact server downtime or an outage bound. No failures means no interruption observed, not proof of zero downtime. COMPLETE describes this monitor recording, not GitHub Actions/deployment success. Record pipeline status separately.
