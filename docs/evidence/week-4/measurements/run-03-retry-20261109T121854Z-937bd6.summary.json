@@ -1,0 +1,19 @@
+{
+  "run": "run-03-retry",
+  "url": "http://todo-devops.duckdns.org/health",
+  "started_utc": "2026-11-09T12:18:54.396+00:00",
+  "finished_utc": "2026-11-09T12:22:43.565+00:00",
+  "monitor_elapsed_s": 229.172,
+  "interval_after_response_s": 0.5,
+  "network_timeout_s": 2,
+  "checks": 223,
+  "healthy_checks": 223,
+  "failed_checks": 0,
+  "initial_baseline_ok": true,
+  "status": "COMPLETE",
+  "observed_downtime_s": 0,
+  "closed_observation_windows_s": 0,
+  "episodes": [],
+  "interpretation": "Estimated client-observed window: first failed request START to first subsequent healthy response END, summed across recovered episodes. Includes request latency/timeouts and sampling effects; not exact server downtime or an outage bound. No failures means no interruption observed, not proof of zero downtime. COMPLETE describes this monitor recording, not GitHub Actions/deployment success. Record pipeline status separately.",
+  "csv_file": "run-03-retry-20261109T121854Z-937bd6.csv"
+}
