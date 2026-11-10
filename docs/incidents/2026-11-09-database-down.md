@@ -12,7 +12,7 @@
 | 2026-11-09 22:02:28 | Endpoint `/health` trả HTTP 500 Internal Server Error | [Ảnh termina](docs\evidence\week-4\incidents\incident-02-database-down\01-change-dbpassword-wrong-format.png) |
 | 2026-11-09 22:02:29 | PostgreSQL ghi nhận lỗi xác thực user `todo_app` | [Log PostgreSQL](docs\evidence\week-4\incidents\incident-02-database-down\01-change-dbpassword-wrong-format.png) |
 | 2026-11-09 22:03:28 | Discord gửi `[FIRING:1] DatabaseDown` | [Ảnh Discord](docs\evidence\week-4\incidents\incident-02-database-down\02-wait-for-discord-announ.png) |
-| 2026-11-10 22:44:10 | Eric khôi phục mật khẩu/cấu hình database | Thông tin phối hợp trong nhóm |
+| 2026-11-10 22:44:10 | Eric khôi phục mật khẩu/cấu hình database | --- |
 | 2026-11-10 22:45:10 | Discord gửi `[RESOLVED] DatabaseDown` | [Ảnh Discord](docs\evidence\week-4\incidents\incident-02-database-down\02-wait-for-discord-announ.png) |
 
 ## Số liệu
