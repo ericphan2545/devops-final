@@ -50,7 +50,7 @@ bash scripts/db-check.sh
 # ---------------------------------------------------------
 ```
 
-### Bảng tổng hợp số liệu thực nghiệm (Bàn giao Người số 2 & 4):
+### Bảng tổng hợp số liệu thực nghiệm:
 
 | Lần | Trạng thái trước Backup | Trạng thái sau Restore | Thời gian Restore (`real`) | MD5 Checksum trùng khớp |
 | :---: | :--- | :--- | :---: | :---: |
@@ -58,6 +58,9 @@ bash scripts/db-check.sh
 | **Lần 2** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.756s` | 100% |
 | **Lần 3** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.270s` | 100% |
 | **Trung bình** | — | — | **`0m2.702s`** | **100%** |
+
+### Minh chứng kết quả 3 lần Restore thực tế:
+![Thực nghiệm 3 lần Restore dữ liệu và mã MD5 Checksum](evidence/week-4/01-backup-restore-3runs.png)
 
 ---
 
@@ -77,24 +80,27 @@ bash scripts/db-check.sh
    ```
 2. **Quan sát & Kiểm tra (Observe):**
    - Trình duyệt ẩn danh vào `http://todo-devops.duckdns.org/` $\rightarrow$ Nhận lỗi **HTTP 503**.
-   - Chờ kênh Discord `#canh-bao` nhận tin nhắn **`[FIRING:1] DatabaseDown`**. Chụp lại màn hình.
+   - Chờ kênh Discord `#canh-bao` nhận tin nhắn **`[FIRING:1] DatabaseDown`**.
 3. **Khoanh vùng lỗi (Isolate):**
    ```bash
    # Log ở container App (Thấy lỗi kết nối DB)
    docker compose logs app --tail 20 | grep -i "OperationalError"
-   # Output: ERROR in app: Database request failed: OperationalError
 
    # Log ở container DB (Thấy DB từ chối mật khẩu user todo_app)
    docker compose logs db --tail 20 | grep -i "password authentication failed"
-   # Output: FATAL: password authentication failed for user "todo_app"
    ```
 4. **Khôi phục hệ thống (Recover):**
    ```bash
    date '+%F %T' && sed -i 's/^APP_DB_PASSWORD=.*/APP_DB_PASSWORD=todo_pass/' .env
    bash scripts/deploy.sh
    ```
-   - Kiểm tra lại trang web $\rightarrow$ Nhận HTTP 200 OK.
-   - Chờ Discord thông báo **`[RESOLVED] DatabaseDown`**. Chụp lại màn hình.
+
+### Minh chứng diễn tập Sự cố 2:
+- **Log lỗi kết nối phía App & Database:**
+![Log lỗi OperationalError ở App và Password Authentication Failed ở DB](evidence/week-4/02-incident2-db-password-logs.png)
+
+- **Cảnh báo tự động trên Discord (Trạng thái FIRING & RESOLVED):**
+![Cảnh báo Discord FIRING và RESOLVED cho sự cố DatabaseDown](evidence/week-4/03-incident2-discord-firing-resolved.png)
 
 ---
 
@@ -107,8 +113,13 @@ sudo ufw status verbose
 
 # Kiểm tra SSH không cho đăng nhập bằng mật khẩu
 sudo sshd -T | grep -E "^(passwordauthentication|permitrootlogin)"
-# Kỳ vọng: passwordauthentication no | permitrootlogin without-password (hoặc no)
 ```
+
+- **Minh chứng Tường lửa UFW:**  
+![Trạng thái Firewall UFW](evidence/week-3/13-step7-ufw-status.png)
+
+- **Minh chứng Cấu hình SSH An toàn:**  
+![Cấu hình SSH cấm đăng nhập bằng mật khẩu](evidence/week-3/17-step7-sshd-no-password.png)
 
 ### 3.2. Quét cổng công khai & Git Secrets (Thực hiện trên Laptop / PowerShell)
 ```powershell
@@ -119,21 +130,31 @@ Test-NetConnection todo-devops.duckdns.org -Port 3000 # Kết quả: False (Cổ
 
 # Quét cây thư mục Git kiểm tra rò rỉ bí mật
 git ls-files | Select-String -Pattern "(\.env$|^secrets/|^backups/)"
-# Kỳ vọng: Không in ra tên file nào (Cây Git sạch 100%)
 ```
+
+#### Minh chứng quét cổng & Git Secrets:
+- **Cổng 80 (HTTP) - Mở công khai:**  
+![Port 80 Open](evidence/week-3/14-step7-port-80-open.png)
+
+- **Cổng 5432 (PostgreSQL) - Chặn hoàn toàn:**  
+![Port 5432 Closed](evidence/week-3/15-step7-port-5432-closed.png)
+
+- **Cổng 3000 (Grafana) - Chặn hoàn toàn:**  
+![Port 3000 Closed](evidence/week-3/16-step7-port-3000-closed.png)
+
+- **Cây thư mục Git sạch không lộ Secrets:**  
+![Git Secrets Clean](evidence/week-3/18-step7-git-no-secrets.png)
 
 ### 3.3. Kiểm thử phân quyền hẹp của user DB `todo_app` (Thực hiện trên EC2)
 Chạy 3 câu lệnh vượt quyền quản trị bằng user `todo_app` để chứng minh PostgreSQL chặn các thao tác phá hoại:
 ```bash
 docker compose exec db psql -U todo_app -d todo -c "DROP TABLE todos;"
-# Output: ERROR: must be owner of table todos
-
 docker compose exec db psql -U todo_app -d todo -c "TRUNCATE todos;"
-# Output: ERROR: permission denied for table todos
-
 docker compose exec db psql -U todo_app -d todo -c "CREATE TABLE thu (id int);"
-# Output: ERROR: permission denied for schema public
 ```
+
+- **Minh chứng PostgreSQL từ chối 3 thao tác nguy hiểm:**  
+![3 Lỗi bị PostgreSQL từ chối quyền với user todo_app](evidence/week-3/19-step7-todo-app-permission-denied.png)
 
 ---
 
@@ -150,17 +171,31 @@ docker compose exec db psql -U todo_app -d todo -c "CREATE TABLE thu (id int);"
 
 ---
 
-## 5. Danh mục minh chứng & Bàn giao tài nguyên
+### 5.1. Bộ ảnh minh chứng thực tế trong hệ thống
 
-### 5.1. Bộ ảnh minh chứng (Lưu tại `docs/evidence/week-4/security-backup/`)
-- `01-backup-restore-3runs.png`: Ảnh chụp terminal chạy 3 lần restore, mã MD5 `55ed9488...` và dòng thời gian `real`.
-- `02-incident2-db-password-logs.png`: Ảnh chụp log `OperationalError` ở app và `FATAL: password authentication failed` ở DB.
-- `03-incident2-discord-firing-resolved.png`: Ảnh tin nhắn Discord `[FIRING]` và `[RESOLVED]` sự cố `DatabaseDown`.
-- `04-ufw-sshd-status.png`: Màn hình `sudo ufw status verbose` và `sshd -T`.
-- `05-port-scan-git-secrets.png`: Kết quả `Test-NetConnection` (Port 80 = True, 5432 & 3000 = False) và `git ls-files` sạch.
-- `06-db-privilege-denied.png`: Màn hình 3 thông báo lỗi từ chối quyền của PostgreSQL đối với user `todo_app`.
+1. **Thực nghiệm Restore DB (3 lần & MD5 Checksum):**  
+   ![Restore 3 Runs](evidence/week-4/01-backup-restore-3runs.png)
+2. **Log lỗi Sự cố 2 (DB Password Failure):**  
+   ![Incident 2 Logs](evidence/week-4/02-incident2-db-password-logs.png)
+3. **Cảnh báo Discord Sự cố 2:**  
+   ![Incident 2 Discord Alerts](evidence/week-4/03-incident2-discord-firing-resolved.png)
+4. **Trạng thái UFW Firewall:**  
+   ![UFW Status](evidence/week-3/13-step7-ufw-status.png)
+5. **Cấu hình SSH cấm đăng nhập bằng Password:**  
+   ![SSH Config](evidence/week-3/17-step7-sshd-no-password.png)
+6. **Kiểm tra mở/đóng cổng (Port Scan từ Laptop):**  
+   - **Cổng 80 (HTTP - Mở):**  
+     ![Port 80 Open](evidence/week-3/14-step7-port-80-open.png)
+   - **Cổng 5432 (PostgreSQL - Chặn):**  
+     ![Port 5432 Closed](evidence/week-3/15-step7-port-5432-closed.png)
+   - **Cổng 3000 (Grafana - Chặn):**  
+     ![Port 3000 Closed](evidence/week-3/16-step7-port-3000-closed.png)
+7. **Quét rò rỉ file bí mật Git (Git Secrets Scan):**  
+   ![Git Secrets Clean](evidence/week-3/18-step7-git-no-secrets.png)
+8. **Kiểm tra phân quyền hẹp user `todo_app`:**  
+   ![DB Permission Denied](evidence/week-3/19-step7-todo-app-permission-denied.png)
 
 ### 5.2. Bàn giao phân công
-- **Bàn giao cho Người số 1 (Đặng Vĩnh Quang):** Ảnh log + mốc thời gian Sự cố 2 để cập nhật vào `docs/playbook.md` và `docs/incidents/`.
+- **Bàn giao cho Người số 1 (Đặng Vĩnh Quang):** Log lỗi + ảnh Discord Sự cố 2 để tổng hợp vào `docs/playbook.md` và `docs/incidents/`.
 - **Bàn giao cho Người số 2 (Ngô Tấn Đức):** Bảng số liệu restore 3 lần (trung bình 2.702s) để tổng hợp vào `docs/experiments.md`.
-- **Bàn giao cho Người số 4 (Phan Tiến Thịnh):** Soạn thảo hoàn chỉnh nội dung **Section 6: Security and Reliability** để đưa vào bài Báo cáo Paper (PDF 6–10 trang) và file video clip thu âm giải thích phần việc cá nhân.
+- **Bàn giao cho Người số 4 (Phan Tiến Thịnh):** Nội dung **Section 6: Security and Reliability** kèm các đường dẫn hình ảnh minh chứng để đưa vào bài Báo cáo Paper (PDF 6–10 trang).
