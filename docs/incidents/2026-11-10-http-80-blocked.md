@@ -21,6 +21,7 @@
 |---|---|---|
 | Từ lúc chặn cổng đến lúc ghi nhận lỗi bên ngoài | 19:45:36 → 19:45:55 | Khoảng 19 giây |
 | Thời gian từ lúc chặn cổng đến Health Check | 19:45:36 → 19:47:21 | Khoảng 1 phút 45 giây |
+| Thời gian từ lúc chặn HTTP đến lúc khôi phục | 19:47:21 → 19:53:32 | Khoảng 6 phút 11 giây |
 | Discord FIRING/RESOLVED | Không có | Không áp dụng |
 
 ## Phát hiện
