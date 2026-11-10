@@ -9,22 +9,19 @@
 
 | Giờ (UTC+7) | Việc xảy ra | Nguồn |
 |---|---|---|
-| 22:51:28 | Endpoint `/health` trả HTTP 500 Internal Server Error | Ảnh terminal, Date: 15:51:28 GMT |
-| 22:51:28 | PostgreSQL ghi nhận lỗi xác thực user `todo_app` | Log PostgreSQL |
-| Chưa xác định | Discord gửi `[FIRING:1] DatabaseDown` | Ảnh Discord, giao diện hiển thị 10:03 SA |
-| Chưa ghi nhận | Eric khôi phục mật khẩu/cấu hình database | Thông tin phối hợp trong nhóm |
-| Chưa ghi nhận | Discord gửi `[RESOLVED] DatabaseDown` | Ảnh Discord, giao diện hiển thị 10:45 SA |
-
-*Lưu ý: Hai mốc giờ Discord được ghi theo đúng giờ hiển thị trên ảnh. Chưa xác nhận ngày và múi giờ của chúng nên không dùng để tính thời gian phát hiện hoặc phục hồi.*
+| 2026-11-09 22:02:28 | Endpoint `/health` trả HTTP 500 Internal Server Error | [Ảnh termina](docs\evidence\week-4\incidents\incident-02-database-down\01-change-dbpassword-wrong-format.png) |
+| 2026-11-09 22:02:29 | PostgreSQL ghi nhận lỗi xác thực user `todo_app` | [Log PostgreSQL](docs\evidence\week-4\incidents\incident-02-database-down\01-change-dbpassword-wrong-format.png) |
+| 2026-11-09 22:03:28 | Discord gửi `[FIRING:1] DatabaseDown` | [Ảnh Discord](docs\evidence\week-4\incidents\incident-02-database-down\02-wait-for-discord-announ.png) |
+| 2026-11-10 22:44:10 | Eric khôi phục mật khẩu/cấu hình database | Thông tin phối hợp trong nhóm |
+| 2026-11-10 22:45:10 | Discord gửi `[RESOLVED] DatabaseDown` | [Ảnh Discord](docs\evidence\week-4\incidents\incident-02-database-down\02-wait-for-discord-announ.png) |
 
 ## Số liệu
 
 | Chỉ số | Mốc | Thời gian |
 |---|---|---|
-| Lỗi database xuất hiện | 22:51:28 | Đã ghi nhận |
-| Từ lúc xảy ra lỗi đến Discord FIRING | Chưa đối chiếu được | Chưa tính |
-| Thời gian ứng dụng bị lỗi | Chưa có mốc Health Check phục hồi chính xác | Chưa tính |
-| Discord RESOLVED | 10:45 SA (theo ảnh) | Chưa đối chiếu được |
+| Từ lúc xảy ra lỗi đến Discord FIRING | 22:02:28 → 22:03:28 | Khoảng 1 phút |
+| Thời gian ứng dụng bị lỗi | 22:03:02 → 22:44:37 | 41 phút 35 giây |
+| Discord RESOLVED so với ứng dụng hồi phục | 22:44:37 → 22:45:10 | 33 giây |
 
 ## Phát hiện
 
@@ -84,4 +81,4 @@ curl -i http://localhost/health
 - Bổ sung ảnh Health Check HTTP 200 sau khi Eric khôi phục database.
 - Đối chiếu thời gian Discord với log server để tính thời gian phát hiện và phục hồi chính xác.
 
-**Kết luận:** Đã mô phỏng thành công lỗi xác thực PostgreSQL và xác nhận hệ thống gửi cảnh báo DatabaseDown. Eric đã hỗ trợ khôi phục cấu hình database. Tuy nhiên, chưa có ảnh Health Check HTTP 200 sau khi khôi phục để xác nhận đầy đủ trạng thái hoạt động của ứng dụng.
+**Kết luận:** Đã mô phỏng thành công lỗi xác thực PostgreSQL và xác nhận hệ thống gửi cảnh báo DatabaseDown. Eric đã hỗ trợ khôi phục cấu hình database.
