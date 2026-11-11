@@ -7,13 +7,14 @@
 
 ## Diễn biến
 
-| Giờ (UTC+7) | Việc xảy ra | Nguồn |
+| Giờ Việt Nam (UTC+7) | Việc xảy ra | Nguồn |
 |---|---|---|
-| Chưa ghi nhận | Eric xóa quy tắc inbound HTTP TCP 80 | AWS Security Group |
-| Khoảng 19:48 | Truy cập website từ trình duyệt bị `ERR_CONNECTION_TIMED_OUT` | Ảnh trình duyệt |
-| Khoảng 19:48 | `curl.exe` từ máy cá nhân timeout sau khoảng 10 giây | Ảnh PowerShell |
-| 19:47:21 | Health Check nội bộ trên EC2 trả HTTP 200 | Ảnh terminal, Date: 12:47:21 GMT |
-| Chưa ghi nhận | Discord không gửi cảnh báo cho tình huống này | Xác nhận của nhóm |
+| Chưa có giờ chính xác | Eric chặn inbound HTTP TCP 80 trong Security Group | Thao tác diễn tập của nhóm |
+| Khoảng 19:48 theo đồng hồ máy chụp | Trình duyệt báo ERR_CONNECTION_TIMED_OUT; curl.exe timeout sau khoảng 10 giây | [Ảnh truy cập bên ngoài bị timeout](../evidence/week-4/incidents/incident-03-port-80/01-delete-rule-http-tcp-80.png) |
+| 2026-11-10 19:47:21 | /health nội bộ trả HTTP 200, status=ok; Date header ghi 12:47:21 GMT | [Ảnh Health Check nội bộ HTTP 200](../evidence/week-4/incidents/incident-03-port-80/02-check-docker-and-health-check.png) |
+| Chưa có mốc kiểm chứng | Eric thêm lại rule HTTP 80; cần ảnh truy cập bên ngoài sau khôi phục | Phối hợp trong nhóm |
+
+Giữ riêng giờ máy chụp và Date header server; không lấy chúng để suy ra thời điểm xóa/mở rule. Tình huống chỉ chặn kết nối bên ngoài nên không kỳ vọng cảnh báo AppDown/DatabaseDown từ giám sát nội bộ.
 
 ## Số liệu
 
