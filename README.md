@@ -33,7 +33,7 @@
 | **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | Phối hợp diễn tập sự cố: khôi phục DB ở sự cố 2, thao tác Security Group chặn/mở cổng 80 ở sự cố 3; merge PR tuần 4 (#37, #39, #40) và hợp nhất README; tổng hợp báo cáo PDF, dựng video demo, hoàn thiện README và hồ sơ nộp |
 | **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) | Script đo deploy; đo thời gian pipeline/gián đoạn ba lần, ghi minh chứng và cập nhật README |
 | **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo | Thực hiện ba tình huống sự cố, Thu thập bằng chứng, Viết Playbook và biên bản sự cố, Cập nhật kiến trúc hệ thống, Phối hợp với các thành viên |
-| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | Đo thực nghiệm Restore DB 3 lần (MD5 `55ed9488...`, TB 2.702s); diễn tập Sự cố 2 (sai mật khẩu DB); rà soát bảo mật UFW, SSH, Git Secrets, phân quyền hẹp `todo_app` và viết Báo cáo Paper Sec/Rel |
+| **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | Đo thực nghiệm Restore DB 3 lần (MD5 `55ed9488...`, TB 0.277s); diễn tập Sự cố 2 (sai mật khẩu DB); rà soát bảo mật UFW, SSH, Git Secrets, phân quyền hẹp `todo_app` và viết Báo cáo Paper Sec/Rel |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
 
@@ -255,7 +255,9 @@ Khi merge nhánh tuần 3 vào `main`, GitHub Actions sẽ tự động SSH vào
 
 Đã bổ sung công cụ đo và thực hiện **ba lần kiểm tra triển khai trên EC2 ngày 09/11/2026**. Mỗi lần có commit riêng trên `main`, pipeline `test → build → deploy`, dữ liệu CSV/JSON/TXT, ảnh GitHub Actions và log deploy.
 
-### 6.1. Cách đo
+### 6.1. Hướng dẫn đo pipeline và gián đoạn deploy — Ngô Tấn Đức
+
+**Phụ trách: Ngô Tấn Đức — MSSV 23090008.**
 
 **Công cụ:** [measure_downtime.py](scripts/measure_downtime.py) chạy trên PowerShell; [measure-downtime.sh](scripts/measure-downtime.sh) là lệnh Bash gọi cùng chương trình Python. Công cụ dùng thư viện chuẩn, gửi GET tới `http://todo-devops.duckdns.org/health` để quan sát đường truy cập từ laptop qua Nginx tới app và PostgreSQL.
 
@@ -403,7 +405,9 @@ bash scripts/db-check.sh
 
 ## 7. Phần bonus — Giao diện và quản lý công việc
 
-**Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.** Giao diện hiện tại dùng bố cục trong `todo-clean.zip`: một cột giữa màn hình, nền sáng, màu nhấn xanh, responsive và không dùng thư viện/CDN. Phần này không thay thế nhiệm vụ tuần 1–2.
+**Phụ trách thiết kế/cải tiến UI: Ngô Tấn Đức.**
+
+Giao diện được thiết kế theo hướng tối giản, bố cục một cột tập trung vào danh sách công việc, màu nhấn xanh và hỗ trợ sáng/tối. HTML, CSS và JavaScript thuần giúp giao diện thích ứng trên máy tính và điện thoại, không phụ thuộc thư viện frontend hoặc CDN. Đây là phần mở rộng về giao diện và trải nghiệm sử dụng.
 
 - Thêm công việc tối đa 200 ký tự, đếm ký tự và chặn tên rỗng/toàn khoảng trắng.
 - Tìm kiếm tiếng Việt có/không dấu, phím `/`, xoá nhanh từ khoá; sắp xếp cũ nhất, mới nhất hoặc tên A–Z.
@@ -412,9 +416,9 @@ bash scripts/db-check.sh
 - IndexedDB giữ snapshot và hàng đợi thêm/xoá. Vẫn dùng được trên trang đang mở khi mất mạng; tự gửi lại khi kết nối phục hồi và không tạo trùng khi mất phản hồi.
 - Form thêm/xoá vẫn gửi POST chuẩn khi tắt JavaScript và máy chủ có kết nối.
 
-Sidebar, lịch, ưu tiên, tiến độ, phân loại và đánh dấu hoàn thành đã được bỏ khỏi giao diện theo mẫu ZIP. Schema/API và metadata cũ vẫn được giữ để bảo toàn dữ liệu và xử lý các thao tác đang chờ từ bản trước; giao diện mới không tự xoá dữ liệu cũ.
+Giao diện tập trung vào các thao tác thêm, tìm kiếm, sắp xếp và xoá công việc. Schema/API tiếp tục giữ metadata hiện có để bảo toàn dữ liệu và xử lý các thao tác đồng bộ đang chờ.
 
-Ứng dụng dùng danh sách chung, chưa có tài khoản riêng. Bản Flask gọi API thật, lưu PostgreSQL. Bản HTML xem thử là bản cục bộ riêng và ghi rõ lưu trên thiết bị, không kết nối EC2.
+Ứng dụng sử dụng danh sách công việc chung, chưa có tài khoản riêng. Các thao tác được xử lý qua API Flask và lưu trong PostgreSQL; khi mất kết nối, trình duyệt lưu tạm thao tác để đồng bộ lại khi máy chủ sẵn sàng.
 
 ## 8. Cấu trúc repository
 
