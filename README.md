@@ -363,6 +363,7 @@ time (echo yes | bash scripts/restore.sh backups/$(ls -t backups/ | head -n 1))
 
 # 5. Kiểm tra toàn vẹn sau khi restore
 bash scripts/db-check.sh
+```
 
 #### 6.4.4. Diễn tập Sự cố 2 — Sai mật khẩu DB (`APP_DB_PASSWORD`)
 
