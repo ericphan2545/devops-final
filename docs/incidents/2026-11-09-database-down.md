@@ -11,6 +11,7 @@
 |---|---|---|
 | 2026-11-09 22:51:28 | /health trả HTTP 500; Date header ghi 15:51:28 GMT | [Ảnh HTTP 500 và log PostgreSQL](../evidence/week-4/incidents/incident-02-database-down/01-change-dbpassword-wrong-format.png) |
 | 2026-11-09 22:51:28 | PostgreSQL báo password authentication failed for user todo_app | [Ảnh HTTP 500 và log PostgreSQL](../evidence/week-4/incidents/incident-02-database-down/01-change-dbpassword-wrong-format.png) |
+| 2026-11-09 22:51:28 | Website hiện "Cơ sở dữ liệu chưa sẵn sàng. Vui lòng thử lại." ngay sau đó | [Screen shot Database down](../evidence/week-4/incidents/incident-02-database-down/database-down.jpg) |
 | Chưa xác định ngày/múi giờ | Discord FIRING DatabaseDown; ảnh hiển thị 10:03 SA tại 09/11 | [Ảnh Discord DatabaseDown](../evidence/week-4/incidents/incident-02-database-down/02-wait-for-discord-announ.png) |
 | Chưa có giờ chính xác | Eric hỗ trợ khôi phục cấu hình/mật khẩu ứng dụng | Phối hợp trong nhóm |
 | Chưa xác định ngày/múi giờ | Discord RESOLVED DatabaseDown; ảnh hiển thị 10:45 SA tại 09/11 | [Ảnh Discord DatabaseDown](../evidence/week-4/incidents/incident-02-database-down/02-wait-for-discord-announ.png) |
