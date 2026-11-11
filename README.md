@@ -961,6 +961,18 @@ Thông báo Discord `[FIRING]` và `[RESOLVED]` cho sự cố `DatabaseDown`:
 
 </details>
 
+### Tuần 4 — Tài nguyên EC2 (CPU/RAM)
+
+Dashboard **EC2 Server Resources** trên Grafana, khoảng 7 ngày (05/11–11/11/2026), chụp lúc 12:16 ngày 11/11/2026.
+
+- CPU: trung bình 2,15%, cao nhất 11,8%.
+- RAM đang dùng: khoảng 809 MiB / 1,86 GiB (~43%).
+- Ổ đĩa gốc `/`: 6,07 / 18,3 GiB (33%).
+
+Các ô đồng hồ là giá trị tại lúc chụp; số của cả tuần lấy ở bảng Mean/Max dưới biểu đồ. Khi xem 7 ngày, Grafana lấy mẫu thưa nên các đỉnh ngắn lúc deploy có thể không hiện. Số liệu ghi khi server chạy bình thường, nhóm chưa chạy thử tải.
+
+![EC2 Server Resources 7 ngày: CPU, RAM, ổ đĩa](docs/evidence/week-4/05-ec2-resources-7-days.png)
+
 ## 15. Xử lý sự cố
 
 | Triệu chứng | Kiểm tra và cách xử lý |
