@@ -11,9 +11,9 @@
 |---|---|---|
 | 2026-11-09 22:51:28 | /health trả HTTP 500; Date header ghi 15:51:28 GMT | [Ảnh HTTP 500 và log PostgreSQL](../evidence/week-4/incidents/incident-02-database-down/01-change-dbpassword-wrong-format.png) |
 | 2026-11-09 22:51:28 | PostgreSQL báo password authentication failed for user todo_app | [Ảnh HTTP 500 và log PostgreSQL](../evidence/week-4/incidents/incident-02-database-down/01-change-dbpassword-wrong-format.png) |
-| Chưa xác định ngày/múi giờ | Discord FIRING DatabaseDown; ảnh hiển thị 10:03 SA | [Ảnh Discord DatabaseDown](../evidence/week-4/incidents/incident-02-database-down/02-wait-for-discord-announ.png) |
+| Chưa xác định ngày/múi giờ | Discord FIRING DatabaseDown; ảnh hiển thị 10:03 SA tại 09/11 | [Ảnh Discord DatabaseDown](../evidence/week-4/incidents/incident-02-database-down/02-wait-for-discord-announ.png) |
 | Chưa có giờ chính xác | Eric hỗ trợ khôi phục cấu hình/mật khẩu ứng dụng | Phối hợp trong nhóm |
-| Chưa xác định ngày/múi giờ | Discord RESOLVED DatabaseDown; ảnh hiển thị 10:45 SA | [Ảnh Discord DatabaseDown](../evidence/week-4/incidents/incident-02-database-down/02-wait-for-discord-announ.png) |
+| Chưa xác định ngày/múi giờ | Discord RESOLVED DatabaseDown; ảnh hiển thị 10:45 SA tại 09/11 | [Ảnh Discord DatabaseDown](../evidence/week-4/incidents/incident-02-database-down/02-wait-for-discord-announ.png) |
 | 2026-11-10 17:56:45 | Xác nhận /health trả HTTP 200, status=ok; Date header ghi 10:56:45 GMT | [Ảnh kiểm tra sau khôi phục](../evidence/week-4/incidents/incident-02-database-down/03-health-check-after-recover-db-password.jpg) |
 
 Mốc HTTP 200 là thời điểm kiểm tra sau khôi phục, không phải thời điểm ứng dụng bắt đầu hồi phục. Hai giờ Discord chưa có ngày/múi giờ đi kèm, nên không ghép với log server để tính thời gian phát hiện hoặc downtime.
