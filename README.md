@@ -30,9 +30,9 @@
 
 | Thành viên | MSSV | Nhiệm vụ tuần 1 | Nhiệm vụ tuần 2 | Nhiệm vụ tuần 3 | Nhiệm vụ tuần 4 |
 | --- | --- | --- | --- | --- | --- |
-| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | Phối hợp diễn tập sự cố: khôi phục DB ở sự cố 2, thao tác Security Group chặn/mở cổng 80 ở sự cố 3; merge PR tuần 4 (#37, #39, #40) và hợp nhất README; tổng hợp báo cáo PDF, dựng video demo, hoàn thiện README và hồ sơ nộp |
-| **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) | Script đo deploy; đo thời gian pipeline/gián đoạn ba lần, ghi minh chứng và cập nhật README |
-| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo | Thực hiện ba tình huống sự cố, Thu thập bằng chứng, Viết Playbook và biên bản sự cố, Cập nhật kiến trúc hệ thống, Phối hợp với các thành viên |
+| **Phan Tiến Thịnh** | 23090023 | Quản lý project/repo, app mẫu; tạo EC2, cài Docker, triển khai và chuẩn bị `setup-server.sh` | Quản lý project, server và tên miền **DuckDNS** | Chuẩn bị server EC2 cho tuần 3 (chạy `prepare-step1.sh`: `.env`, user `todo_app`, webhook Discord); kiểm tra deploy và Grafana; thử cảnh báo Discord và log | Phối hợp diễn tập sự cố: khôi phục DB ở sự cố 2, thao tác Security Group chặn/mở cổng 80 ở sự cố 3; merge các PR tuần 4 (#37, #39, #40); tổng hợp báo cáo PDF, dựng video demo và hoàn thiện hồ sơ nộp |
+| **Ngô Tấn Đức** | 23090008 | Dockerfile, Compose, môi trường, Nginx, sơ đồ kiến trúc và README | Cập nhật README; thiết kế/cải tiến **UI (bonus)** | Viết script chuẩn bị server, phân quyền DB, migration/deploy và giám sát Grafana (PR #20) | Phụ trách cập nhật README; viết script đo deploy, đo thời gian pipeline và gián đoạn qua ba lần triển khai, lưu minh chứng |
+| **Đặng Vĩnh Quang** | 23090005 | — | workflow CI/CD, chạy pipeline, đo thời gian ba lần, kiểm tra dữ liệu sau deploy và demo chặn lỗi | Ghi biên bản sự cố (Incident Report); ghi nhận cảnh báo Prometheus/Discord; tạo Pull Request cập nhật báo cáo | Phụ trách diễn tập ba sự cố; viết playbook và biên bản, thu thập minh chứng, cập nhật sơ đồ 7 dịch vụ và viết phần Kiến trúc, Thiết kế và Thách thức cho báo cáo |
 | **Huỳnh Hữu Như Mẫn** | 23090020 | — |test với PostgreSQL, script deploy/mã phiên bản và GitHub Secrets | Viết script backup/restore (`backup.sh`, `restore.sh`, `db-check.sh`), thực nghiệm restore khôi phục DB (xác thực MD5); cấu hình UFW Firewall, kiểm tra bảo mật SSH, quét bí mật Git và kiểm thử phân quyền hẹp DB | Đo thực nghiệm Restore DB 3 lần (MD5 `55ed9488...`, TB 0.277s); diễn tập Sự cố 2 (sai mật khẩu DB); rà soát bảo mật UFW, SSH, Git Secrets, phân quyền hẹp `todo_app` và viết Báo cáo Paper Sec/Rel |
 
 **UI là phần bonus, không tính vào nhiệm vụ bắt buộc của tuần 1–2.**
@@ -401,6 +401,22 @@ bash scripts/db-check.sh
 - [x] Đã kiểm định 5 tiêu chí bảo mật (UFW, SSH, Port scan, Git secrets, DB privileges).
 - [x] Đã soạn báo cáo Paper phần Section 6 (Security & Reliability) bàn giao cho Người số 4.
 - [x] Đã quay video lồng tiếng đoạn demo giải thích phần việc cá nhân (2-3 phút).
+
+### 6.5. Diễn tập sự cố, playbook và kiến trúc hệ thống — Đặng Vĩnh Quang
+
+**Phụ trách: Đặng Vĩnh Quang — MSSV 23090005.**
+
+Quang thực hiện kiểm tra và thu thập log, ảnh minh chứng cho ba tình huống diễn tập. Quang phối hợp với Thịnh ở các bước khôi phục cấu hình DB và thay đổi Security Group. Quy trình khoanh vùng, khôi phục và kiểm tra sau sự cố được ghi trong [playbook](docs/playbook.md).
+
+| Tình huống | Kết quả theo minh chứng | Biên bản |
+| --- | --- | --- |
+| Dừng container app | Nginx trả HTTP 502. Sau khi khởi động lại app, `/health` trả `status=ok`. | [AppDown](docs/incidents/2026-11-09-app-down.md) |
+| Sai mật khẩu kết nối PostgreSQL | `/health` trả HTTP 500 và log PostgreSQL báo lỗi xác thực `todo_app`. Có ảnh cảnh báo DatabaseDown và ảnh kiểm tra HTTP 200 sau khi khôi phục. | [DatabaseDown](docs/incidents/2026-11-09-database-down.md) |
+| Chặn HTTP 80 trên Security Group | Truy cập từ bên ngoài bị timeout trong khi `/health` nội bộ vẫn trả HTTP 200. Còn thiếu ảnh xác nhận truy cập lại từ bên ngoài sau khi mở cổng. | [Chặn HTTP 80](docs/incidents/2026-11-10-http-80-blocked.md) |
+
+Các biên bản ghi rõ mốc đã đối chiếu với log và ảnh. Những thời lượng còn thiếu mốc được ghi là **chưa tính**.
+
+Quang cập nhật [sơ đồ kiến trúc 7 dịch vụ](docs/architecture-7-services.drawio.png) và [file nguồn Draw.io](docs/architecture-7-services.drawio), đồng thời viết phần **Kiến trúc và thiết kế hệ thống** và **Những khó khăn và thách thức** trong [bản báo cáo](docs/quang-report.md).
 
 ## 7. Phần bonus — Giao diện và quản lý công việc
 
@@ -900,7 +916,7 @@ Lệnh kiểm tra Git không in dòng nào, nghĩa là repo không chứa `.env`
 
 </details>
 
-### Tuần 4 — Minh chứng đã thực hiện (Huỳnh Hữu Như Mẫn — Người số 3)
+### Tuần 4 — Minh chứng backup, restore và bảo mật — Huỳnh Hữu Như Mẫn
 
 <details>
 <summary>1. Minh chứng 3 lần Restore dữ liệu và mã MD5 Checksum</summary>
