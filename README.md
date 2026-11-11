@@ -358,13 +358,12 @@ bash scripts/backup.sh
 docker compose exec db psql -U todo -d todo -c "DELETE FROM todos;"
 bash scripts/db-check.sh
 
-# 4. Khôi phục dữ liệu và đo thời gian thực thi (Gõ 'yes' xác nhận)
-time bash scripts/restore.sh backups/$(ls -t backups/ | head -n 1)
+# 4. Khôi phục dữ liệu và đo thời gian thực thi (Chuyền 'yes' tự động)
+time (echo yes | bash scripts/restore.sh backups/$(ls -t backups/ | head -n 1))
 
 # 5. Kiểm tra toàn vẹn sau khi restore
 bash scripts/db-check.sh
 ```
-*Lặp lại chuỗi lệnh trên 3 lần độc lập để thu thập dòng thời gian `real`.*
 
 #### 6.4.4. Diễn tập Sự cố 2 — Sai mật khẩu DB (`APP_DB_PASSWORD`)
 
@@ -390,14 +389,14 @@ bash scripts/db-check.sh
 
 | Lần | Trạng thái trước Backup | Trạng thái sau Restore | Thời gian Restore (`real`) | MD5 Checksum trùng khớp |
 | :---: | :--- | :--- | :---: | :---: |
-| **Lần 1** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m3.081s` | 100% |
-| **Lần 2** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.756s` | 100% |
-| **Lần 3** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m2.270s` | 100% |
-| **Trung bình** | — | — | **`0m2.702s`** | **100%** |
+| **Lần 1** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m0.279s` | 100% |
+| **Lần 2** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m0.276s` | 100% |
+| **Lần 3** | `so viec: 14 \| ma: 55ed9488...` | `so viec: 14 \| ma: 55ed9488...` | `0m0.275s` | 100% |
+| **Trung bình** | — | — | **`0m0.277s`** | **100%** |
 
 #### 6.4.8. Checklist cá nhân
 
-- [x] Đã đo 3 lần restore dữ liệu thực tế, tính trung bình 2.702s và mã MD5 checksum khớp 100%.
+- [x] Đã đo 3 lần restore dữ liệu thực tế, tính trung bình 0.277s và mã MD5 checksum khớp 100%.
 - [x] Đã diễn tập Sự cố 2, thu thập đủ log `OperationalError`, `FATAL password` và cảnh báo Discord.
 - [x] Đã kiểm định 5 tiêu chí bảo mật (UFW, SSH, Port scan, Git secrets, DB privileges).
 - [x] Đã soạn báo cáo Paper phần Section 6 (Security & Reliability) bàn giao cho Người số 4.
