@@ -362,7 +362,7 @@ Sau đó, thành viên số 1:
 |---|---|---|---|
 | Container ứng dụng bị dừng | Đã thực hiện | Đã xác nhận status=ok | Có ảnh dừng/khôi phục; thiếu mốc cảnh báo/phục hồi chính xác |
 | Sai mật khẩu DB | Đã thực hiện | Đã có ảnh HTTP 200 sau khôi phục | Có ảnh lỗi/Discord/phục hồi; chưa tính thời gian khi mốc chưa khớp |
-| Chặn cổng HTTP 80 | Đã thực hiện | Chờ ảnh xác nhận truy cập bên ngoài sau khôi phục | Có ảnh timeout bên ngoài và HTTP 200 nội bộ |
+| Chặn cổng HTTP 80 | Đã thực hiện | Đã xác nhận HTTP 200 từ bên ngoài (11/11) | Có ảnh timeout bên ngoài, HTTP 200 nội bộ và mốc CloudTrail xóa/mở rule |
 
 ## 8. Bài học kinh nghiệm
 
@@ -383,7 +383,7 @@ Cả ba tình huống đã có ảnh diễn tập. Các mốc thời gian đư�
 - [x] Lưu ảnh dừng và khởi động lại app, kết quả Health Check và hai trạng thái cảnh báo AppDown.
 - [x] Lưu ảnh lỗi xác thực DB, cảnh báo DatabaseDown và HTTP 200 sau khôi phục.
 - [x] Lưu ảnh timeout bên ngoài khi chặn HTTP 80 và HTTP 200 nội bộ trên EC2.
-- [ ] Bổ sung ảnh Security Group sau khi mở lại HTTP 80 và kết quả truy cập từ bên ngoài.
+- [x] Bổ sung mốc CloudTrail xóa/mở lại HTTP 80 và ảnh HTTP 200 từ bên ngoài.
 - [ ] Ghi đầy đủ ngày/múi giờ Discord, giờ thao tác khôi phục để tính các thời lượng còn thiếu.
 
-**Kết luận:** Playbook có quy trình và bằng chứng diễn tập cho cả ba sự cố; app và kết nối DB đã có bằng chứng phục hồi. Cần xác nhận truy cập bên ngoài sau khi mở HTTP 80 và bổ sung các mốc còn thiếu trước khi chốt số liệu thời gian.
+**Kết luận:** Playbook có quy trình và bằng chứng diễn tập cho cả ba sự cố; app và kết nối DB đã có bằng chứng phục hồi. Truy cập bên ngoài sau khi mở HTTP 80 đã được xác nhận; vẫn cần bổ sung các mốc còn thiếu trước khi chốt số liệu thời gian.
