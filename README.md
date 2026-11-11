@@ -412,7 +412,7 @@ Quang thực hiện kiểm tra và thu thập log, ảnh minh chứng cho ba tì
 | --- | --- | --- |
 | Dừng container app | Nginx trả HTTP 502. Sau khi khởi động lại app, `/health` trả `status=ok`. | [AppDown](docs/incidents/2026-11-09-app-down.md) |
 | Sai mật khẩu kết nối PostgreSQL | `/health` trả HTTP 500 và log PostgreSQL báo lỗi xác thực `todo_app`. Có ảnh cảnh báo DatabaseDown và ảnh kiểm tra HTTP 200 sau khi khôi phục. | [DatabaseDown](docs/incidents/2026-11-09-database-down.md) |
-| Chặn HTTP 80 trên Security Group | Truy cập từ bên ngoài bị timeout trong khi `/health` nội bộ vẫn trả HTTP 200. Còn thiếu ảnh xác nhận truy cập lại từ bên ngoài sau khi mở cổng. | [Chặn HTTP 80](docs/incidents/2026-11-10-http-80-blocked.md) |
+| Chặn HTTP 80 trên Security Group | Truy cập từ bên ngoài bị timeout trong khi `/health` nội bộ vẫn trả HTTP 200. Rule bị xóa lúc 18:59:52 và mở lại lúc 20:50:53 (CloudTrail); đã kiểm tra lại HTTP 200 từ bên ngoài ngày 11/11. | [Chặn HTTP 80](docs/incidents/2026-11-10-http-80-blocked.md) |
 
 Các biên bản ghi rõ mốc đã đối chiếu với log và ảnh. Những thời lượng còn thiếu mốc được ghi là **chưa tính**.
 

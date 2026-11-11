@@ -12,9 +12,10 @@
 | 2026-11-10 18:59:52 | Eric xóa rule inbound HTTP TCP 80 (0.0.0.0/0) trong Security Group | [CloudTrail RevokeSecurityGroupIngress](../evidence/week-4/incidents/incident-03-port-80/03-cloudtrail-revoke-port-80.png) |
 | Khoảng 19:48 theo đồng hồ máy chụp | Trình duyệt báo ERR_CONNECTION_TIMED_OUT; curl.exe timeout sau khoảng 10 giây | [Ảnh truy cập bên ngoài bị timeout](../evidence/week-4/incidents/incident-03-port-80/01-delete-rule-http-tcp-80.png) |
 | 2026-11-10 19:47:21 | /health nội bộ trả HTTP 200, status=ok; Date header ghi 12:47:21 GMT | [Ảnh Health Check nội bộ HTTP 200](../evidence/week-4/incidents/incident-03-port-80/02-check-docker-and-health-check.png) |
-| 2026-11-10 20:50:53 | Eric thêm lại rule inbound HTTP TCP 80 (0.0.0.0/0); còn thiếu ảnh truy cập bên ngoài sau khôi phục | [CloudTrail AuthorizeSecurityGroupIngress](../evidence/week-4/incidents/incident-03-port-80/04-cloudtrail-authorize-port-80.png) |
+| 2026-11-10 20:50:53 | Eric thêm lại rule inbound HTTP TCP 80 (0.0.0.0/0) | [CloudTrail AuthorizeSecurityGroupIngress](../evidence/week-4/incidents/incident-03-port-80/04-cloudtrail-authorize-port-80.png) |
+| 2026-11-11 13:43:13 | Kiểm tra lại từ laptop qua Internet: `curl.exe -i http://todo-devops.duckdns.org/health` trả HTTP 200, status=ok; Date header ghi 06:43:13 GMT | [Ảnh truy cập bên ngoài sau khi mở lại cổng](../evidence/week-4/incidents/incident-03-port-80/05-external-health-after-reopen.png) |
 
-Giờ xóa và thêm lại rule lấy từ CloudTrail Event history, trường `eventTime` (11:59:52Z và 13:50:53Z, cộng 7 giờ ra giờ Việt Nam). Giữ riêng giờ máy chụp và Date header server; không lấy chúng để suy ra thời điểm xóa/mở rule. Tình huống chỉ chặn kết nối bên ngoài nên không kỳ vọng cảnh báo AppDown/DatabaseDown từ giám sát nội bộ.
+Giờ xóa và thêm lại rule lấy từ CloudTrail Event history, trường `eventTime` (11:59:52Z và 13:50:53Z, cộng 7 giờ ra giờ Việt Nam). Giữ riêng giờ máy chụp và Date header server; không lấy chúng để suy ra thời điểm xóa/mở rule. Tình huống chỉ chặn kết nối bên ngoài nên không kỳ vọng cảnh báo AppDown/DatabaseDown từ giám sát nội bộ. Ảnh HTTP 200 từ bên ngoài chụp ngày 11/11, chỉ dùng để xác nhận cổng đã mở lại; mốc mở lại tính theo CloudTrail.
 
 ## Số liệu
 
@@ -78,6 +79,6 @@ curl -i http://localhost/health
 - AWS Security Group cần duy trì quy tắc HTTP TCP 80 để người dùng truy cập website.
 - Tình huống này không tạo Discord alert theo thiết kế/ghi nhận của nhóm.
 - Thời gian xóa và khôi phục rule đã lấy từ CloudTrail (18:59:52 và 20:50:53).
-- Bổ sung ảnh Security Group sau khi khôi phục và kết quả truy cập website HTTP 200 từ bên ngoài.
+- Đã bổ sung mốc CloudTrail khi mở lại rule và ảnh HTTP 200 từ bên ngoài (chụp ngày 11/11).
 
-**Kết luận:** Đã mô phỏng thành công tình huống chặn cổng HTTP 80. Website bên ngoài bị timeout trong khi Health Check nội bộ vẫn trả HTTP 200. Nhóm xác nhận tình huống này không gửi Discord alert. Cần bổ sung bằng chứng truy cập bên ngoài sau khi khôi phục rule để xác nhận hoàn tất toàn bộ quá trình.
+**Kết luận:** Đã mô phỏng thành công tình huống chặn cổng HTTP 80. Website bên ngoài bị timeout trong khi Health Check nội bộ vẫn trả HTTP 200. Nhóm xác nhận tình huống này không gửi Discord alert. Rule được mở lại lúc 20:50:53 theo CloudTrail; truy cập từ bên ngoài đã được kiểm tra lại HTTP 200 ngày 11/11.
